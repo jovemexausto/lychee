@@ -120,7 +120,7 @@ Aqui você encontra o progresso atual e os próximos passos para o Lychee. Estam
 
 ### 🔮 Próximos Passos
 
-- [ ] **Primitivas Integradas**: Implementar "primitivas" como queues, hooks e KV stores, com geração schema-driven e tipo-seguro.
+- [ ] **Primitives do Lychee**: Introduzir queues, hooks, KV stores e mais, com geração schema-driven de código tipado (ex: `lychee add queue notification-events`).
 - [ ] **Integração Profunda com Docker**: Suporte completo para desenvolvimento containerizado, geração automática de Dockerfiles e comandos de build/deploy.
 - [ ] **Controle Avançado de Variáveis de Ambiente**: Hierarquia de configuração e gerenciamento de segredos com `.lychee.env`.
 - [ ] **Proxy Simples Integrado**: Adicionar um proxy reverso in-process para roteamento de tráfego local durante o desenvolvimento.
