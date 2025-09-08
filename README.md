@@ -1,8 +1,24 @@
+<br />
+<div align="center">
 <div align="center">
   <img src=".assets/lychee-banner.png" alt="Uma lichia gigante no centro de uma explosão de frutas em estilo ilustrado." />
 </div>
+<h3 align="center">Lychee</h3>
 
-# Lychee: O Gerenciador de Monorepo Poliglota para Desenvolvimento "Contract-First"
+  <p align="center">
+    O Gerenciador de monorepos poliglota para desenvolvimento "Contract-First"
+    <br />
+    <br />
+    <a href="#"><strong>Site Oficial »</strong></a>
+    <br />
+    <br />
+    <a href="https://github.com/jovemexausto/lychee">GitHub</a>
+    ·
+    <a href="https://github.com/jovemexausto/lychee/issues">Report Bug</a>
+  </p>
+</div>
+
+## Sobre o Projeto
 
 **Lychee** é uma ferramenta de interface de linha de comando (CLI) projetada para simplificar e acelerar o desenvolvimento em monorepos poliglota. Ao adotar uma filosofia **"schema-first"**, Lychee transforma sua coleção de serviços em um aplicativo único e coeso, proporcionando uma experiência de desenvolvedor (DX) incomparável, guiada pelo princípio de **"Zero Context Switching"**.
 
