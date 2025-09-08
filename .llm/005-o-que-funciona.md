@@ -1,0 +1,8 @@
+- iniciar todos os serviços com um comando (lx dev start)
+- descoberta de serviços via 'service.yml'
+- loggings agregados e visualização única
+- uso correto da versão python especificada para o serviço
+- service.yml como fonte única da verdade para versão python
+- compartilhamento de schemas gerados via symlink
+- inicialização de novo monorepo a partir de templates
+- geração de pydantic a partir de json schema

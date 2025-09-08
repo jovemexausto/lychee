@@ -1,0 +1,22 @@
+type: python
+# TODO: remover necessidade do campo path ou realizar verificação do caminho real vs caminho especificado
+path: services/fastapi
+
+runtime:
+  framework: fastapi
+  port: 8004
+  entry_point: main:app
+  python_version: "3.11"
+
+# ativa
+schemas:
+  mount_dir: models
+
+dependencies:
+  services:
+    - run_file
+  # filtra os schemas que podem acionar o renício do serviço
+  # se schemas não estiver definido, o serviço "dependerá" de todos
+  # reiniciando o serviço caso qualquer schema mude, isso se a feature estiver ativada
+  schemas:
+    - customer

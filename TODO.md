@@ -1,0 +1,12 @@
+- add typescript e certificar tipos compilados para ambos
+- erro ao adicionar language não suportada
+- ao alterar o symlink, remover o outro automaticamente, verificar symlinks quebrados
+- adicionar automaticamente o mount_dir no gitignore
+- plugin system, hook system: on_start, on_stop, before_this, after_that etc
+- languages, docker, tools, templates all can be plugins
+- plugins can be installed as pip packages
+- lychee auto install and load plugins listed on lychee.yaml
+- services, packages, tools, resource
+- tornar o comando init mais agradável, simples e flexível
+- init deve ser mais relacionado ao lychee.yml e iniciar um projeto em branco ou no diretório atual
+- usar 'lx new project' invés de 'lx init' para criar projeto a patir de template

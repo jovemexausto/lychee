@@ -1,0 +1,14 @@
+version: 1.0
+
+project:
+  languages:
+    - python
+  workspace:
+    services_dir: services
+
+schemas:
+  format: "json_schema"
+  output_path: .lychee
+
+environment:
+  MY_GLOBAL_ENV: orange

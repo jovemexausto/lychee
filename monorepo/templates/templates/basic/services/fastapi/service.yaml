@@ -1,0 +1,15 @@
+type: python
+path: services/fastapi
+
+runtime:
+  framework: fastapi
+  port: 8004
+  entry_point: main:app
+  python_version: "3.11"
+
+dependencies:
+  services:
+    - run_file
+
+schemas:
+  mount_dir: models

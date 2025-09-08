@@ -1,0 +1,13 @@
+type: python
+path: services/run_file
+
+runtime:
+  framework: run_file
+  entry_point: main.py
+  python_version: "3.12"
+
+schemas:
+  mount_dir: types
+
+environment:
+  MY_LOCAL_ENV: flower
