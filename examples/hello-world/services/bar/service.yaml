@@ -1,5 +1,5 @@
 type: python
-path: services/run_file
+path: services/bar
 
 runtime:
   framework: run_file

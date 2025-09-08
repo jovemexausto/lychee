@@ -10,3 +10,4 @@
 - tornar o comando init mais agradável, simples e flexível
 - init deve ser mais relacionado ao lychee.yml e iniciar um projeto em branco ou no diretório atual
 - usar 'lx new project' invés de 'lx init' para criar projeto a patir de template
+- remover necessidade do campo path ou realizar verificação do caminho real vs caminho especificado
