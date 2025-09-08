@@ -1,3 +1,7 @@
+<div align="center">
+  <img src=".assets/lychee-banner.png" alt="Uma lichia gigante no centro de uma explosão de frutas em estilo ilustrado." />
+</div>
+
 # Lychee: O Gerenciador de Monorepo Poliglota para Desenvolvimento "Contract-First"
 
 **Lychee** é uma ferramenta de interface de linha de comando (CLI) projetada para simplificar e acelerar o desenvolvimento em monorepos poliglota. Ao adotar uma filosofia **"schema-first"**, Lychee transforma sua coleção de serviços em um aplicativo único e coeso, proporcionando uma experiência de desenvolvedor (DX) incomparável.
