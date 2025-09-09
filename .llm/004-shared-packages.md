@@ -9,7 +9,7 @@ The core idea is to treat these shared packages as first-class "services" or com
 You'll need to:
 
 1.  **Define a standard location** for these packages.
-2.  **Configure them in your `monorepo.yml`** similar to how services are defined.
+2.  **Configure them in your `lychee.yaml`** similar to how services are defined.
 3.  **Integrate with package managers** (Poetry/pip for Python, npm/yarn for TypeScript) to handle local dependencies.
 4.  **Potentially leverage schema generation** for cross-language package interactions.
 
@@ -53,7 +53,7 @@ monorepo-manager/
     │   ├── package.schema.json   # New schema for packages
     │   └── ...
     └── templates/
-        ├── monorepo.yml
+        ├── lychee.yaml
         ├── services.yml
         ├── packages.yml          # New config file/structure for packages
         └── ...
@@ -160,7 +160,7 @@ class MonorepoConfig(BaseModel):
     # ... rest of the MonorepoConfig
 ```
 
-#### `assets/templates/monorepo.yml` (Example)
+#### `assets/templates/lychee.yaml` (Example)
 
 You might want a section for packages in your root config file.
 
@@ -645,9 +645,9 @@ This is the trickiest part and depends on your desired development workflow:
 ### Example Workflow
 
 1.  **Initialize Monorepo:** `monorepo init my-monorepo`
-2.  **Add a Python package:** Create `packages/python/my_lib` with `pyproject.toml` and source code. Add it to `monorepo.yml`.
-3.  **Add a TypeScript package:** Create `packages/typescript/my_types` with `package.json` and source code. Add it to `monorepo.yml`.
-4.  **Add a service that uses them:** Create a service (e.g., `services/my_app`) and configure its `dependencies.packages` in `monorepo.yml` to include `my_lib` and `my_types`.
+2.  **Add a Python package:** Create `packages/python/my_lib` with `pyproject.toml` and source code. Add it to `lychee.yaml`.
+3.  **Add a TypeScript package:** Create `packages/typescript/my_types` with `package.json` and source code. Add it to `lychee.yaml`.
+4.  **Add a service that uses them:** Create a service (e.g., `services/my_app`) and configure its `dependencies.packages` in `lychee.yaml` to include `my_lib` and `my_types`.
 5.  **Install Dependencies:** `monorepo install` (This should install dependencies for services and packages, and potentially link packages).
 6.  **Build Packages:** `monorepo build package` (or `monorepo build -pn my_lib -pn my_types`)
 7.  **Build Service:** `monorepo build service` (or `monorepo build -sn my_app`)

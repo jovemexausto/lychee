@@ -14,7 +14,7 @@ This phase focuses on the essential, continuous feedback loop.
 
 1.  **Intelligent Service Orchestration:** The `dev` command will be the brain.
 
-    - It will parse the `monorepo.yml` to understand the dependency graph.
+    - It will parse the `lychee.yaml` to understand the dependency graph.
     - It will start services in the correct order, waiting for health checks to pass before starting their dependents.
     - Instead of a complex proxy manager initially, it will use a simple, in-process reverse proxy (perhaps built with `FastAPI` or a lightweight `aiohttp` server) to route traffic to the correct local ports.
 

@@ -18,7 +18,7 @@ These are excellent ideas and they perfectly align with Lychee's core mission of
 
 This is the cornerstone of a great DX. Lychee won't just copy files; it will intelligently scaffold entire projects and services, integrating them into the monorepo's configuration.
 
-- **Template-driven Scaffolding:** The `lychee add` command will use a central template system. For example, `lychee add service my-new-service --template python-fastapi` would not only create the service's file structure but also automatically add the new service's configuration to the `monorepo.yml` file.
+- **Template-driven Scaffolding:** The `lychee add` command will use a central template system. For example, `lychee add service my-new-service --template python-fastapi` would not only create the service's file structure but also automatically add the new service's configuration to the `lychee.yaml` file.
 - **Contextual Variables:** The templates will be smart. You'll be able to use variables like `{{service_name}}` or `{{project_path}}` in your template files and even in filenames, which Lychee will replace dynamically. This ensures consistency and reduces manual work.
 - **Dependency Installation:** Lychee can even run initial setup commands. When you add a new service, it can automatically run `npm install` or `pip install` within the new service's directory, so it's ready to go immediately.
 
@@ -47,7 +47,7 @@ Docker is non-negotiable for consistent development and deployment. Lychee's int
 Managing environment variables is a common source of errors. Lychee should provide a clean, layered approach.
 
 - **Configuration Hierarchy:** Environment variables can be defined at multiple levels, with later layers overriding earlier ones:
-  1.  **Global:** Variables defined in `monorepo.yml` for all services.
+  1.  **Global:** Variables defined in `lychee.yaml` for all services.
   2.  **Service-specific:** Variables defined for a single service in `monorerepo.yml`.
   3.  **Environment-specific:** Variables defined in `.monorepo/environments/staging.yml`, which would override everything else for that environment.
 - **Secrets Management:** For sensitive information like API keys, Lychee can prompt the user to create a `.lychee.env` file in the root directory. This file would never be committed to Git but would be automatically loaded by the `lychee dev` command, keeping secrets out of version control.

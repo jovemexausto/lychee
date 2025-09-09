@@ -39,7 +39,7 @@ def sample_project(temp_dir: Path, sample_config: MonorepoConfig) -> MonorepoPro
     (temp_dir / "apps" / "web").mkdir(parents=True)
 
     # Create config file
-    config_file = temp_dir / "monorepo.yml"
+    config_file = temp_dir / "lychee.yaml"
     with config_file.open("w") as f:
         f.write(
             """

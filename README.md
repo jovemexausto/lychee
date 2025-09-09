@@ -78,7 +78,7 @@ Lychee entende o gráfico de dependências do seu projeto.
   - Instalação de dependências
   - Seeding de dados
   - Configuração do ambiente
-- **Inicialização de Pacotes e Serviços**: Use `lx new` para scaffolding a partir de templates, como `lx new service my-new-service --template python-fastapi`, que cria estruturas, configura `monorepo.yml` e instala dependências automaticamente.
+- **Inicialização de Pacotes e Serviços**: Use `lx new` para scaffolding a partir de templates, como `lx new service my-new-service --template python-fastapi`, que cria estruturas, configura `lychee.yaml` e instala dependências automaticamente.
 
 ### 🍇 6. Primitivas Integradas do Lychee
 
@@ -95,7 +95,7 @@ Lychee oferece "primitivas" schema-driven para padrões comuns, como filas, hook
 
 ### 🍉 8. Controle Total sobre Variáveis de Ambiente
 
-- **Hierarquia de Configuração**: Defina variáveis globais, por serviço ou por ambiente em arquivos como `monorepo.yml` ou `.monorepo/environments/staging.yml`.
+- **Hierarquia de Configuração**: Defina variáveis globais, por serviço ou por ambiente em arquivos como `lychee.yaml` ou `.monorepo/environments/staging.yml`.
 - **Gerenciamento de Segredos**: Use `.lychee.env` para valores sensíveis, carregados automaticamente e ignorados no Git.
 
 ---
