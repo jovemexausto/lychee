@@ -66,7 +66,9 @@ class TemplateManager:
             path (Path): The destination directory for the new project.
             template (str): The name of the project template to use.
         """
-        logger.info(f"Creating new project '{name}' at '{path}' using template '{template}'...")
+        logger.info(
+            f"Creating new project '{name}' at '{path}' using template '{template}'"
+        )
         context = {
             "project_name": name,
             "project_path": str(path),
@@ -83,7 +85,9 @@ class TemplateManager:
             path (Path): The destination directory for the new service.
             template (str): The name of the service template to use.
         """
-        logger.info(f"Creating new service '{name}' at '{path}' using template '{template}'...")
+        logger.info(
+            f"Creating new service '{name}' at '{path}' using template '{template}'"
+        )
         context = {
             "service_name": name,
             "service_path": str(path),
@@ -91,7 +95,9 @@ class TemplateManager:
         self.create_from_template(template, path, context)
         logger.info(f"Service '{name}' successfully created.")
 
-    def create_from_template(self, template_name: str, dest_path: Path, context: Dict[str, Any]) -> None:
+    def create_from_template(
+        self, template_name: str, dest_path: Path, context: Dict[str, Any]
+    ) -> None:
         """
         Creates a new project or service from a template.
 

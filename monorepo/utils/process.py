@@ -39,13 +39,17 @@ class ProcessManager:
                 stderr=asyncio.subprocess.PIPE,
                 start_new_session=False,  # Ensure process group is created for graceful shutdown
             )
-            logger.debug(f"Started process with PID {process.pid} and command: {' '.join(cmd)}")
+            logger.debug(
+                f"Started process with PID {process.pid} and command: {' '.join(cmd)}"
+            )
             return process
         except Exception as e:
             logger.error(f"Failed to start process with command {' '.join(cmd)}: {e}")
             raise
 
-    async def stop_process(self, process: asyncio.subprocess.Process, timeout: int = 10) -> None:
+    async def stop_process(
+        self, process: asyncio.subprocess.Process, timeout: int = 10
+    ) -> None:
         """
         Stops a process and all of its descendants gracefully.
 
@@ -75,7 +79,9 @@ class ProcessManager:
                 # Wait for the process to exit gracefully
                 await asyncio.wait_for(process.wait(), timeout=timeout)
             except asyncio.TimeoutError:
-                logger.warning(f"Process with PID {process.pid} did not terminate gracefully, force-killing...")
+                logger.warning(
+                    f"Process with PID {process.pid} did not terminate gracefully, force-killing"
+                )
                 process.kill()
                 await process.wait()
 
@@ -84,7 +90,9 @@ class ProcessManager:
         except (psutil.NoSuchProcess, OSError) as e:
             logger.error(f"Failed to stop process {process.pid}: {e}")
         except Exception as e:
-            logger.error(f"An unexpected error occurred while stopping process {process.pid}: {e}")
+            logger.error(
+                f"An unexpected error occurred while stopping process {process.pid}: {e}"
+            )
 
     async def run_command(self, cmd: List[str], cwd: str) -> None:
         """

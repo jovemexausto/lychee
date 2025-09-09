@@ -6,10 +6,8 @@ import functools
 import sys
 
 import asyncclick as click
-from rich.console import Console
 
-# Assumes that the rich console has been set up elsewhere, e.g., in cli.py
-console = Console()
+from monorepo.utils.logging import get_logger
 
 
 def handle_errors(func):
@@ -20,20 +18,17 @@ def handle_errors(func):
 
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
+        logger = get_logger("lychee")
         try:
             return func(*args, **kwargs)
         except click.ClickException as e:
             # Click exceptions are handled by Click, so just re-raise
             raise e
+        except KeyboardInterrupt:
+            logger.print("\n[yellow]Operation cancelled by user[/yellow]")
+            sys.exit(1)
         except Exception as e:
-            from monorepo.utils.logging import get_logger
-
-            logger = get_logger("monorepo")
-
-            logger.exception("An unexpected error occurred:")
-            console.print(f"[red]Error: {e}[/red]")
-
-            # Exit with a non-zero status code to indicate failure
+            logger.exception(f"An unexpected error occurred: {e}")
             sys.exit(1)
 
     return wrapper

@@ -17,7 +17,9 @@ logger = get_logger(__name__)
 class Service:
     """Represents a service in the monorepo with language adapter integration."""
 
-    def __init__(self, name: str, path: Path, config: ServiceConfig, project: "MonorepoProject"):
+    def __init__(
+        self, name: str, path: Path, config: ServiceConfig, project: "MonorepoProject"
+    ):
         self.name = name
         self.path = path.resolve()
         self.config = config
@@ -31,9 +33,7 @@ class Service:
         adapter_class = language_registry.get_adapter(self.config)
 
         if not adapter_class:
-            message = f"No adapter found for language: {self.config.type}"
-            logger.warning(message)
-            raise RuntimeError(message)
+            raise RuntimeError(f"No adapter found for language: {self.config.type}")
 
         return adapter_class
 
@@ -43,7 +43,11 @@ class Service:
 
     def get_pid(self) -> Optional[int]:
         """Get the PID of the service process."""
-        return self._process.pid if self._process and self._process.returncode is None else None
+        return (
+            self._process.pid
+            if self._process and self._process.returncode is None
+            else None
+        )
 
     @property
     def is_running(self) -> bool:
@@ -61,12 +65,10 @@ class Service:
             logger.warning(f"Service {self.name} is already running")
             return
 
-        # Install dependencies before starting
-        await self.install_dependencies()
-
         if mode == "docker":
             await self._start_docker()
         else:
+            await self.install_dependencies()
             await self._start_native()
 
     async def stop(self) -> None:
@@ -74,7 +76,6 @@ class Service:
         if self._process:
             await self._process_manager.stop_process(self._process)
             self._process = None
-            logger.info(f"Stopped service {self.name}")
 
     async def restart(self, mode: str = "native") -> None:
         """Restart the service."""
@@ -83,8 +84,6 @@ class Service:
 
     async def _start_native(self) -> None:
         """Start the service natively using language adapter."""
-        if not self._language_adapter:
-            raise ValueError(f"No language adapter available for {self.config.type}")
 
         cmd = await self._language_adapter.get_start_command()
         env = self._build_environment()
@@ -97,7 +96,9 @@ class Service:
 
         pid = self._process.pid
 
-        logger.debug(f"Service {self.name} started with PID {pid} and command: {' '.join(cmd)}")
+        logger.debug(
+            f"Service {self.name} started with PID {pid} and command: {' '.join(cmd)}"
+        )
 
     async def _start_docker(self) -> None:
         """Start the service using Docker."""
@@ -106,10 +107,13 @@ class Service:
     def _build_environment(self) -> Dict[str, str]:
         """Build the environment variables for the service process."""
         env = os.environ.copy()
+        # Set adapter's built-in env variables
         adapter_env = self._language_adapter.get_environment_variables()
         env.update(adapter_env)
+        # Set global lychee.yml variables
         if self.project.config.environment:
             env.update(self.project.config.environment)
+        # Set local service variables
         if self.config.environment:
             env.update(self.config.environment)
         return env
@@ -117,10 +121,12 @@ class Service:
     async def install_dependencies(self) -> None:
         """Install service dependencies using language adapter."""
         if self._language_adapter:
-            await self._language_adapter.install_dependencies(self.config)
+            await self._language_adapter.install_dependencies()
             logger.info(f"📦 Installed dependencies for {self.name}")
         else:
-            logger.warning(f"Cannot install dependencies - no adapter for {self.config.type}")
+            logger.warning(
+                f"Cannot install dependencies - no adapter for {self.config.type}"
+            )
 
     async def build(self) -> None:
         """Build the service using language adapter."""
@@ -162,7 +168,7 @@ class Service:
             "port": self.port,
             "path": str(self.path),
             "type": self.config.type,
-            "framework": self.config.runtime.framework,
+            "framework": self.config.framework,
             "detected_framework": self.detect_framework(),
             "has_adapter": self._language_adapter is not None,
         }

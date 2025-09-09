@@ -21,12 +21,15 @@ def temp_dir() -> Generator[Path, None, None]:
 def sample_config() -> MonorepoConfig:
     """Sample monorepo configuration for tests."""
     return MonorepoConfig(
-        name="test-monorepo",
-        version="1.0.0",
+        version=1.0,
         project=ProjectConfig(languages=["python", "typescript"]),
         services={
-            "auth-service": ServiceConfig(type="python", framework="fastapi", path="./services/auth"),
-            "frontend": ServiceConfig(type="typescript", framework="nextjs", path="./apps/web"),
+            "auth-service": ServiceConfig(
+                type="python", framework="fastapi", path="./services/auth"
+            ),
+            "frontend": ServiceConfig(
+                type="typescript", framework="nextjs", path="./apps/web"
+            ),
         },
     )
 

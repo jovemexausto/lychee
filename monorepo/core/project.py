@@ -30,7 +30,11 @@ class MonorepoProject:
 
     @classmethod
     def create(
-        cls, name: str, path: Path, template: str = "basic", template_manager: Optional[TemplateManager] = None
+        cls,
+        name: str,
+        path: Path,
+        template: str = "basic",
+        template_manager: Optional[TemplateManager] = None,
     ) -> "MonorepoProject":
         """Create a new monorepo project."""
         path = path.resolve()
@@ -72,7 +76,9 @@ class MonorepoProject:
                     self._services[service_name] = service_instance
                     logger.debug(f"🧭 Loaded service '{service_name}' from lychee.yaml")
                 except Exception as e:
-                    logger.error(f"Failed to load explicit service configuration for {service_name}: {e}")
+                    logger.error(
+                        f"Failed to load explicit service configuration for {service_name}: {e}"
+                    )
             return  # Explicit services take precedence, so we stop here.
 
         # If no explicit services are defined, fall back to directory scanning
@@ -100,9 +106,13 @@ class MonorepoProject:
                         )
                         self._services[service_name] = service_instance
                         rel_path = service_config_path.relative_to(self.path)
-                        logger.info(f"🔍 Discovered service '{service_name}' from {rel_path}")
+                        logger.debug(
+                            f"🔍 Discovered service '{service_name}' from {rel_path}"
+                        )
                     except Exception as e:
-                        logger.error(f"Failed to load service configuration for {service_path.name}: {e}")
+                        logger.error(
+                            f"Failed to load service configuration for {service_path.name}: {e}"
+                        )
 
     @property
     def services(self) -> Dict[str, Service]:
@@ -124,7 +134,9 @@ class MonorepoProject:
         service_path.mkdir(parents=True, exist_ok=True)
 
         # Create service
-        service = Service(name=name, path=service_path, config=service_config, project=self)
+        service = Service(
+            name=name, path=service_path, config=service_config, project=self
+        )
 
         self._services[name] = service
 
@@ -167,7 +179,7 @@ class MonorepoProject:
 
         return dependents
 
-    def validate(self) -> List[str]:
+    async def validate(self) -> None:
         """Validate the project configuration."""
         errors = []
 
@@ -180,10 +192,19 @@ class MonorepoProject:
         for name, service in self._services.items():
             for dep_name in service.config.dependencies.services:
                 if dep_name not in self._services:
-                    errors.append(f"Service '{name}' depends on unknown service '{dep_name}'")
+                    errors.append(
+                        f"Service '{name}' depends on unknown service '{dep_name}'"
+                    )
 
-        # TODO: Implement circular dependency detection
-        return errors
+        # Run services' own validators
+        for name, service in self._services.items():
+            errors.extend(await service.validate())
+
+        for error in errors:
+            logger.error(error)
+
+        if errors:
+            raise RuntimeError(f"Project validation errors found.")
 
     def get_build_order(self) -> List[str]:
         """Get the order in which services should be built based on dependencies."""
@@ -193,7 +214,9 @@ class MonorepoProject:
 
         def visit(service_name: str) -> None:
             if service_name in temp_visited:
-                raise ValueError(f"Circular dependency detected involving '{service_name}'")
+                raise ValueError(
+                    f"Circular dependency detected involving '{service_name}'"
+                )
 
             if service_name in visited:
                 return

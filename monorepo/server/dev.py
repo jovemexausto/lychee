@@ -48,8 +48,12 @@ class DevelopmentServer:
         """
         loop = asyncio.get_running_loop()
 
-        loop.add_signal_handler(signal.SIGINT, lambda: asyncio.create_task(self._stop_all_async()))
-        loop.add_signal_handler(signal.SIGTERM, lambda: asyncio.create_task(self._stop_all_async()))
+        loop.add_signal_handler(
+            signal.SIGINT, lambda: asyncio.create_task(self._stop_all_async())
+        )
+        loop.add_signal_handler(
+            signal.SIGTERM, lambda: asyncio.create_task(self._stop_all_async())
+        )
 
         try:
             if not services_to_start:
@@ -81,7 +85,7 @@ class DevelopmentServer:
         """
         Starts the development server in a background process.
         """
-        logger.info("Background mode is not yet fully implemented.")
+        logger.info("Background mode is not yet implemented.")
         logger.info("Please run `lychee dev start` to use the interactive mode.")
 
     async def _stop_all_async(self):
@@ -92,13 +96,15 @@ class DevelopmentServer:
             return
 
         self._is_stopping = True
-        logger.print(Text("Gracefully shutting down services...", style="blue"))
+        logger.info("[yellow]Gracefully shutting down services[/]")
 
-        tasks = [self._stop_service(service) for service in self._monitored_services.values()]
+        tasks = [
+            self._stop_service(service) for service in self._monitored_services.values()
+        ]
 
         await asyncio.gather(*tasks, return_exceptions=True)
 
-        logger.print(Text("All services have been stopped.", style="green"))
+        logger.info("[green]All services have been stopped.[/]")
 
     def stop_all(self):
         """
@@ -117,7 +123,7 @@ class DevelopmentServer:
         Starts a service and sets up monitoring for its logs and health.
         """
         try:
-            logger.info(f"Starting service '{service.name}'...")
+            logger.info(f"Starting service '{service.name}'")
 
             await service.start(self.mode)
 
@@ -134,12 +140,18 @@ class DevelopmentServer:
 
             await process.wait()
             if process.returncode != 0:
-                logger.warning(f"[yellow]🚨 Service '{service.name}' exited with code {process.returncode}[/yellow]")
+                logger.warning(
+                    f"[yellow]🚨 Service '{service.name}' exited with code {process.returncode}[/yellow]"
+                )
             else:
-                logger.info(f"🏁 [blue]Service '{service.name}' exited with code {process.returncode}[/]")
+                logger.info(
+                    f"🏁 [blue]Service '{service.name}' exited with code {process.returncode}[/]"
+                )
 
         except Exception as e:
-            logger.error(f"[red]Failed to start or monitor service '{service.name}': {e}[/red]")
+            logger.error(
+                f"[red]Failed to start or monitor service '{service.name}': {e}[/red]"
+            )
             if service.name in self._monitored_services:
                 await self._stop_service(service)
 
@@ -150,11 +162,11 @@ class DevelopmentServer:
         if service.name not in self._monitored_services:
             return
 
-        logger.print(Text(f"Stopping service '{service.name}'...", style="orange3"))
+        logger.info(f"[orange3]Stopping service '{service.name}'[/]")
         await service.stop()
 
         del self._monitored_services[service.name]
-        logger.print(Text(f"Service '{service.name}' stopped.", style="green"))
+        logger.info(f"[green]Service '{service.name}' stopped.[/]")
 
     def restart_service(self, service_name: str):
         """
@@ -172,7 +184,9 @@ class DevelopmentServer:
         Asynchronously restarts a service.
         """
         if not service.is_running:
-            logger.warning(f"Service '{service.name}' is not running, starting it instead.")
+            logger.warning(
+                f"Service '{service.name}' is not running, starting it instead."
+            )
             await self._start_and_monitor_service(service)
         else:
             await self._stop_service(service)
@@ -193,14 +207,18 @@ class DevelopmentServer:
                 status_info[service_name] = {"status": status, "pid": pid}
         return status_info
 
-    def _extract_log_level_and_message(self, line: str, default="INFO") -> tuple[str, str]:
+    def _extract_log_level_and_message(
+        self, line: str, default="INFO"
+    ) -> tuple[str, str]:
         match = re.match(r"^(DEBUG|INFO|WARNING|ERROR|CRITICAL):\s*(.*)", line)
         if match:
             level, message = match.groups()
             return level, message.strip()
         return default, line.strip()  # Default to INFO if no level is found
 
-    async def _read_logs(self, service_name: str, stream: asyncio.StreamReader, stream_type: str):
+    async def _read_logs(
+        self, service_name: str, stream: asyncio.StreamReader, stream_type: str
+    ):
         """
         Reads logs from a service's stdout or stderr.
         """
@@ -212,7 +230,9 @@ class DevelopmentServer:
                 break
             decoded_line = line.decode("utf-8").strip()
             default_level = "ERROR" if stream_type == "stderr" else "INFO"
-            level, message = self._extract_log_level_and_message(decoded_line, default=default_level)
+            level, message = self._extract_log_level_and_message(
+                decoded_line, default=default_level
+            )
             if message:
                 log_method = getattr(service_logger, level.lower(), service_logger.info)
                 log_method(message)

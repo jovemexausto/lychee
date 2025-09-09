@@ -18,9 +18,15 @@ def dev():
 
 
 @dev.command()
-@click.option("--services", "-s", help="Comma-separated list of services to start", default=None)
 @click.option(
-    "--mode", "-m", type=click.Choice(["native", "hybrid", "docker"]), default="hybrid", help="Development mode"
+    "--services", "-s", help="Comma-separated list of services to start", default=None
+)
+@click.option(
+    "--mode",
+    "-m",
+    type=click.Choice(["native", "hybrid", "docker"]),
+    default="hybrid",
+    help="Development mode",
 )
 @click.option("--port", "-p", type=int, help="Proxy port (default: from config)")
 @click.option("--no-proxy", is_flag=True, help="Disable development proxy")
@@ -41,6 +47,7 @@ async def start(
         # Load project
         working_dir = ctx.obj["working_dir"]
         project = MonorepoProject(working_dir)
+        await project.validate()
 
         # Parse services
         service_list: List[str] = []
@@ -49,18 +56,19 @@ async def start(
 
         # Create development server
         dev_server = DevelopmentServer(
-            project=project, mode=mode, proxy_port=port, enable_proxy=not no_proxy, enable_dashboard=not no_dashboard
+            project=project,
+            mode=mode,
+            proxy_port=port,
+            enable_proxy=not no_proxy,
+            enable_dashboard=not no_dashboard,
         )
 
         if background:
-            logger.info("Starting development server in background...")
-            # dev_server.start_background(service_list)
+            dev_server.start_background(service_list)
         else:
-            logger.info("Starting development server...")
             await dev_server.start(service_list)
-
     except Exception as e:
-        logger.error(f"❌ Failed to start development server: {e}")
+        logger.error(f"Failed to start development server: {e}")
         await ctx.aexit(1)
 
 
@@ -117,7 +125,8 @@ async def status(ctx: click.Context):
         for service, info in status_info.items():
             status_color = "green" if info["status"] == "running" else "red"
             logger.print(
-                f"  {service}: [{status_color}]{info['status']}[/{status_color}] " f"(PID: {info.get('pid', 'N/A')})"
+                f"  {service}: [{status_color}]{info['status']}[/{status_color}] "
+                f"(PID: {info.get('pid', 'N/A')})"
             )
 
     except Exception as e:

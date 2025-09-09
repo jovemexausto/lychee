@@ -1,8 +1,8 @@
 type: python
+framework: fastapi
 path: services/foo
 
 runtime:
-  framework: fastapi
   port: 8004
   entry_point: main:app
   python_version: "3.11"
@@ -12,7 +12,7 @@ schemas:
 
 dependencies:
   services:
-    - run_file
+    - bar
   # TODO:
   # permitir filtrar os schemas que podem acionar o renício do serviço
   # se "schemas" não estiver definido no campo "dependencies", o serviço "dependerá" de todos

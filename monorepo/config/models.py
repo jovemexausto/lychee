@@ -8,7 +8,6 @@ from pydantic import BaseModel, Field
 class RuntimeConfig(BaseModel):
     """Runtime configuration for a service."""
 
-    framework: str = "run_file"
     python_version: Optional[str] = None
     entry_point: Optional[str] = None
     port: Optional[int] = None
@@ -46,6 +45,7 @@ class ServiceConfig(BaseModel):
     runtime: RuntimeConfig = Field(default_factory=RuntimeConfig)
     dependencies: ServiceDependencies = Field(default_factory=ServiceDependencies)
     schemas: ServiceSchemasConfig = Field(default_factory=ServiceSchemasConfig)
+    framework: Optional[str] = None
     api: Optional[ApiConfig] = None
     config: Optional[Dict[str, Any]] = None
     environment: Optional[Dict[str, str]] = None
@@ -82,7 +82,9 @@ class WatchConfig(BaseModel):
 
     enabled: bool = True
     debounce: int = 200
-    ignore: List[str] = Field(default_factory=lambda: [".git", "node_modules", "__pycache__"])
+    ignore: List[str] = Field(
+        default_factory=lambda: [".git", "node_modules", "__pycache__"]
+    )
 
 
 class DevelopmentConfig(BaseModel):

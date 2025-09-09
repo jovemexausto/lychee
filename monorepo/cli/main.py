@@ -15,12 +15,30 @@ logger = get_logger(__name__)
 
 @click.group()
 @click.version_option(__version__)
-@click.option("--verbose", "-v", count=True, help="Increase verbosity (can be used multiple times)")
+@click.option(
+    "--verbose", "-v", count=True, help="Increase verbosity (can be used multiple times)"
+)
 @click.option("--quiet", "-q", is_flag=True, help="Suppress output except for errors")
-@click.option("--config", "-c", type=click.Path(exists=True, path_type=Path), help="Path to configuration file")
-@click.option("--working-dir", "-w", type=click.Path(exists=True, path_type=Path), help="Working directory")
+@click.option(
+    "--config",
+    "-c",
+    type=click.Path(exists=True, path_type=Path),
+    help="Path to configuration file",
+)
+@click.option(
+    "--working-dir",
+    "-w",
+    type=click.Path(exists=True, path_type=Path),
+    help="Working directory",
+)
 @click.pass_context
-def cli(ctx: click.Context, verbose: int, quiet: bool, config: Optional[Path], working_dir: Optional[Path]):
+def cli(
+    ctx: click.Context,
+    verbose: int,
+    quiet: bool,
+    config: Optional[Path],
+    working_dir: Optional[Path],
+):
     """Monorepo Manager - A polyglot monorepo manager with schema-driven development."""
     # Setup context
     ctx.ensure_object(dict)
@@ -59,14 +77,7 @@ cli.add_command(schema)
 @handle_errors
 def main():
     """Main entry point with error handling."""
-    try:
-        cli()
-    except KeyboardInterrupt:
-        logger.print("\n[yellow]Operation cancelled by user[/yellow]")
-        sys.exit(1)
-    except Exception as e:
-        logger.error(f"[red]Unexpected error: {e}[/red]")
-        sys.exit(1)
+    cli()
 
 
 if __name__ == "__main__":

@@ -2,28 +2,13 @@
 
 import asyncio
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from monorepo.config.models import ServiceConfig
 from monorepo.utils.logging import get_logger
 
 logger = get_logger(__name__)
-
-
-@dataclass
-class BuildContext:
-    """Context for build operations."""
-
-    target: str = "development"  # development, production, test
-    optimization_level: int = 0  # 0-3, higher means more optimization
-    include_debug_info: bool = True
-    extra_args: Optional[Dict[str, Any]] = None
-
-    def __post_init__(self):
-        if self.extra_args is None:
-            self.extra_args = {}
 
 
 class LanguageAdapter(ABC):
@@ -62,7 +47,7 @@ class LanguageAdapter(ABC):
         pass
 
     @abstractmethod
-    async def get_build_command(self, context: Optional[BuildContext] = None) -> List[str]:
+    async def get_build_command(self) -> List[str]:
         """Get the command to build the service."""
         pass
 
@@ -72,13 +57,15 @@ class LanguageAdapter(ABC):
         pass
 
     @abstractmethod
-    async def install_dependencies(self, config: ServiceConfig) -> None:
+    async def install_dependencies(self) -> None:
         """Install service dependencies."""
         pass
 
     @classmethod
     @abstractmethod
-    async def generate_types_from_schema(cls, schema_path: Path, output_path: Path, project_path: Path) -> None:
+    async def generate_types_from_schema(
+        cls, schema_path: Path, output_path: Path, project_path: Path
+    ) -> None:
         """Generate language-specific types from JSON schema."""
         pass
 
@@ -90,7 +77,7 @@ class LanguageAdapter(ABC):
     # Optional async methods with default implementations
     async def validate_service(self) -> List[str]:
         """Validate service configuration and structure."""
-        errors = []
+        errors: List[str] = []
 
         # Basic path validation
         if not self.service_path.exists():
@@ -108,7 +95,9 @@ class LanguageAdapter(ABC):
         try:
             detected_framework = await self.detect_framework()
             if detected_framework and detected_framework not in self.supported_frameworks:
-                errors.append(f"Detected framework '{detected_framework}' is not officially supported")
+                errors.append(
+                    f"Detected framework '{detected_framework}' is not officially supported"
+                )
         except Exception as e:
             errors.append(f"Framework detection failed: {e}")
 
@@ -152,13 +141,15 @@ class LanguageAdapter(ABC):
 
     async def check_health(self) -> Dict[str, Any]:
         """Check the health of the service and its dependencies."""
-        health_info = {
+        health_info: dict[str, Any] = {
             "service_path_exists": self.service_path.exists(),
-            "service_path_readable": self.service_path.is_dir() if self.service_path.exists() else False,
+            "service_path_readable": (
+                self.service_path.is_dir() if self.service_path.exists() else False
+            ),
             "language": self.language,
             "framework": None,
             "dependencies_installed": False,
-            "validation_status": "unknown",
+            "validation_status": "sunknown",
             "required_tools": {},
         }
 
@@ -174,7 +165,9 @@ class LanguageAdapter(ABC):
             health_info["errors"] = await self.validate_service()
 
             # Check if dependencies are installed (basic heuristic)
-            health_info["dependencies_installed"] = await self._dependencies_appear_installed()
+            health_info["dependencies_installed"] = (
+                await self._dependencies_appear_installed()
+            )
 
         except Exception as e:
             health_info["health_check_error"] = str(e)
@@ -185,7 +178,7 @@ class LanguageAdapter(ABC):
     # Helper methods
     async def _check_required_tools(self) -> List[str]:
         """Check which required tools are missing."""
-        missing = []
+        missing: List[str] = []
         for tool in self.required_tools:
             if not await self._tool_exists(tool):
                 missing.append(tool)

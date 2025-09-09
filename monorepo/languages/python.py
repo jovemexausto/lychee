@@ -1,38 +1,26 @@
 """Async Python language adapter."""
 
 import asyncio
-import json
 import shutil
 import subprocess
 import tomllib
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Dict, List, Optional, Set
 
-from monorepo.config.models import ServiceConfig
 from monorepo.languages.base import LanguageAdapter
 from monorepo.utils.logging import get_logger
 from monorepo.utils.process import process_manager
 
 logger = get_logger(__name__)
 
-
-@dataclass
-class PythonConfig:
-    """Configuration for Python service."""
-
-    framework: Optional[str] = None
-    version: str = "3.11"
-    use_uv: bool = True
-    use_poetry: bool = False
+DEFAULT_PYTHON_VERSION = "3.12"
 
 
 class PythonAdapter(LanguageAdapter):
-    """Async Python language adapter with improved dependency management and validation."""
+    """Python language adapter."""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._config = PythonConfig()
         self._dependency_cache: Optional[Set[str]] = None
 
     @property
@@ -47,48 +35,25 @@ class PythonAdapter(LanguageAdapter):
     @property
     def required_tools(self) -> List[str]:
         """Return list of required tools/executables for this language."""
-        return ["uv"]
+        return ["python3", "uv"]
 
     async def detect_framework(self) -> Optional[str]:
-        """Auto-detect Python framework asynchronously."""
-        # Check for Django first (most specific)
-        if await self._file_exists("manage.py"):
-            return "django"
-
-        # Check for FastAPI
-        if await self._has_dependency("fastapi"):
-            return "fastapi"
-
-        # Check for Flask
-        if await self._has_dependency("flask"):
-            return "flask"
-
-        # Check for Celery
-        if await self._has_dependency("celery"):
-            return "celery"
-
-        # Check for Streamlit
-        if await self._has_dependency("streamlit"):
-            return "streamlit"
-
-        # Check for Jupyter/Notebook
-        if await self._has_dependency("jupyter") or await self._has_dependency("notebook"):
-            return "jupyter"
-
+        """Auto-detect Python framework."""
+        for framework in self.supported_frameworks:
+            if await self._has_dependency(framework):
+                return framework
         return None
 
     async def get_start_command(self) -> List[str]:
         """Get Python service start command."""
         python_path = await self._get_python_executable()
-        if not python_path:
-            raise RuntimeError("Python executable not found. Please ensure virtual environment is set up correctly.")
 
-        framework = self.service_config.runtime.framework or await self.detect_framework()
+        framework = self.service_config.framework or await self.detect_framework()
         port = self._get_port()
         entry_point = self._get_entry_point()
 
+        # should user be able to define custom command on configs ?
         command_map = {
-            "run_file": [str(python_path), entry_point],
             "fastapi": [
                 str(python_path),
                 "-m",
@@ -102,7 +67,16 @@ class PythonAdapter(LanguageAdapter):
                 "--app-dir",
                 str(self.service_path),
             ],
-            "flask": [str(python_path), "-m", "flask", "run", "--host", "0.0.0.0", "--port", str(port)],
+            "flask": [
+                str(python_path),
+                "-m",
+                "flask",
+                "run",
+                "--host",
+                "0.0.0.0",
+                "--port",
+                str(port),
+            ],
         }
 
         if framework in command_map:
@@ -113,68 +87,52 @@ class PythonAdapter(LanguageAdapter):
 
     async def get_build_command(self) -> List[str]:
         """Get Python build command."""
-        if await self._file_exists("pyproject.toml"):
-            if await self._has_build_system("poetry"):
-                poetry_path = await self._get_tool_path("poetry")
-                return [str(poetry_path), "build"]
-            elif await self._has_build_system("setuptools") or await self._has_build_system("hatchling"):
-                python_path = await self._get_python_executable()
-                return [str(python_path), "-m", "build"]
-
-        if await self._file_exists("setup.py"):
-            python_path = await self._get_python_executable()
-            return [str(python_path), "setup.py", "bdist_wheel"]
-
-        # Compile Python files as fallback
         python_path = await self._get_python_executable()
-        return [str(python_path), "-m", "py_compile", "**/*.py"]
+        # TODO: should'nt this come from ServiceConfig ?
+        return [str(python_path), "-m", "build"]
 
     async def get_test_command(self) -> List[str]:
         """Get Python test command."""
         python_path = await self._get_python_executable()
-        if not python_path:
-            raise RuntimeError("Python executable not found.")
-
-        # Check for Poetry
-        if await self._file_exists("pyproject.toml") and await self._has_build_system("poetry"):
-            poetry_path = await self._get_tool_path("poetry")
-            return [str(poetry_path), "run", "pytest"]
-
         # Check for pytest
-        if (
-            await self._file_exists("pytest.ini")
-            or await self._file_exists("pyproject.toml")
-            or await self._directory_exists("tests")
-        ):
+        if await self._file_exists("pytest.ini") or await self._has_dependency("pytest"):
             return [str(python_path), "-m", "pytest", "-v"]
 
         # Check for unittest
-        if await self._directory_exists("test"):
-            return [str(python_path), "-m", "unittest", "discover", "test"]
+        if any(map(self._directory_exists, ["test", "tests"])):
+            return [str(python_path), "-m", "unittest", "discover", "-p", '"test*"']
 
-        # Default pytest in current directory
-        return [str(python_path), "-m", "pytest", ".", "-v"]
+        return ['echo "No tests or testing modules found."']
 
-    async def install_dependencies(self, config: ServiceConfig) -> None:
+    async def install_dependencies(self) -> None:
         """Install Python dependencies asynchronously."""
-        try:
-            if await self._file_exists("pyproject.toml"):
-                # overwrite .python-version with config.runtime.python_version
-                python_version = getattr(config.runtime, "python_version", "3.11")
-                python_version_file = Path(config.path) / ".python-version"
-                await self._write_file_async(python_version_file, python_version)
-                await self._install_with_modern_tools()
-            elif await self._file_exists("requirements.txt"):
-                await self._install_with_pip()
-            elif await self._file_exists("setup.py"):
-                await self._install_editable()
-            else:
-                logger.warning("No dependency file found. Consider adding pyproject.toml or requirements.txt.")
-        except subprocess.CalledProcessError as e:
-            raise RuntimeError(f"Failed to install dependencies: {e}")
+        # Ensure .python-version file is up to date with the service definition
+        python_version = getattr(
+            self.service_config.runtime, "python_version", DEFAULT_PYTHON_VERSION
+        )
+        python_version_file = Path(self.service_path) / ".python-version"
+        await self._write_file_async(python_version_file, python_version)
+
+        # Ensure the service has its own virtual environment with the right python version
+        global_python = str(shutil.which("python3") or shutil.which("python"))
+        await self._run_command_async([global_python, "-m", "pip", "install", "uv"])
+        await self._run_command_async([global_python, "-m", "uv", "venv"])
+
+        if await self._file_exists("pyproject.toml"):
+            await self._install_with_uv()
+
+        elif await self._file_exists("requirements.txt"):
+            await self._install_with_pip()
+
+        else:
+            logger.warning(
+                "No dependency file found. Consider adding pyproject.toml or requirements.txt."
+            )
 
     @classmethod
-    async def generate_types_from_schema(cls, schema_path: Path, output_path: Path, project_path: Path) -> None:
+    async def generate_types_from_schema(
+        cls, schema_path: Path, output_path: Path, project_path: Path
+    ) -> None:
         """Generate Pydantic models from JSON schema."""
         schema_name = schema_path.stem.replace(".schema", "")
         full_generated_path = output_path / f"{schema_name}.py"
@@ -200,21 +158,27 @@ class PythonAdapter(LanguageAdapter):
 
     def get_environment_variables(self) -> Dict[str, str]:
         """Get Python-specific environment variables."""
-        env = {
+        return {
             "PYTHONPATH": str(self.service_path),
             "PYTHONUNBUFFERED": "1",
             "PYTHONDONTWRITEBYTECODE": "1",
             "PIP_NO_CACHE_DIR": "1",
         }
 
-        return env
-
     async def validate_service(self) -> List[str]:
         """Validate Python service asynchronously."""
-        errors: List[str] = await super().validate_service() if hasattr(super(), "validate_service") else []
+        errors: List[str] = (
+            await super().validate_service()
+            if hasattr(super(), "validate_service")
+            else []
+        )
 
         # Check for Python files
-        python_files = list(self.service_path.glob("**/*.py"))
+        python_files = [
+            f
+            for f in self.service_path.glob("**/*.py")
+            if ".venv" not in f.parts and "node_modules" not in f.parts
+        ]
         if not python_files:
             errors.append("No Python files found in service directory")
 
@@ -232,7 +196,9 @@ class PythonAdapter(LanguageAdapter):
         )
 
         if not has_deps:
-            errors.append("No dependency file found (requirements.txt, pyproject.toml, or setup.py)")
+            errors.append(
+                "No dependency file found (requirements.txt, pyproject.toml, or setup.py)"
+            )
 
         # Validate dependency file format
         if await self._file_exists("pyproject.toml"):
@@ -247,8 +213,9 @@ class PythonAdapter(LanguageAdapter):
             await self._build_dependency_cache()
 
         if self._dependency_cache is None:
-            # Optionally, raise an error or return False
-            return False
+            raise RuntimeError(
+                "Can't check dependencies for automatic framework detection."
+            )
 
         return package_name.lower() in self._dependency_cache
 
@@ -263,7 +230,13 @@ class PythonAdapter(LanguageAdapter):
                 line = line.strip().lower()
                 if line and not line.startswith("#"):
                     # Extract package name (before ==, >=, etc.)
-                    pkg_name = line.split("==")[0].split(">=")[0].split("<=")[0].split("~=")[0].strip()
+                    pkg_name = (
+                        line.split("==")[0]
+                        .split(">=")[0]
+                        .split("<=")[0]
+                        .split("~=")[0]
+                        .strip()
+                    )
                     dependencies.add(pkg_name)
 
         # Check pyproject.toml
@@ -272,35 +245,37 @@ class PythonAdapter(LanguageAdapter):
             try:
                 data = tomllib.loads(content)
                 # Poetry dependencies
-                if "tool" in data and "poetry" in data["tool"] and "dependencies" in data["tool"]["poetry"]:
-                    dependencies.update(dep.lower() for dep in data["tool"]["poetry"]["dependencies"].keys())
+                if (
+                    "tool" in data
+                    and "poetry" in data["tool"]
+                    and "dependencies" in data["tool"]["poetry"]
+                ):
+                    dependencies.update(
+                        dep.lower()
+                        for dep in data["tool"]["poetry"]["dependencies"].keys()
+                    )
 
                 # PEP 621 dependencies
                 if "project" in data and "dependencies" in data["project"]:
                     for dep in data["project"]["dependencies"]:
-                        pkg_name = dep.split("==")[0].split(">=")[0].split("<=")[0].split("~=")[0].strip().lower()
+                        pkg_name = (
+                            dep.split("==")[0]
+                            .split(">=")[0]
+                            .split("<=")[0]
+                            .split("~=")[0]
+                            .strip()
+                            .lower()
+                        )
                         dependencies.add(pkg_name)
             except Exception as e:
                 logger.warning(f"Failed to parse pyproject.toml: {e}")
 
         self._dependency_cache = dependencies
 
-    async def _get_python_executable(self) -> Optional[Path]:
+    async def _get_python_executable(self) -> Path:
         """Get the Python executable path."""
         # Check virtual environment first
-        venv_python = await self._get_venv_python_path()
-        if venv_python:
-            return venv_python
-
-        # Fall back to system Python
-        python_cmd = shutil.which("python3") or shutil.which("python")
-        return Path(python_cmd) if python_cmd else None
-
-    async def _get_venv_python_path(self) -> Optional[Path]:
-        """Get the path to the virtual environment's Python executable."""
         venv_path = self.service_path / ".venv"
-        if not venv_path.exists():
-            return None
 
         for bin_dir in ["bin", "Scripts"]:
             for python_name in ["python3", "python"]:
@@ -308,7 +283,7 @@ class PythonAdapter(LanguageAdapter):
                 if python_path.exists():
                     return python_path
 
-        return None
+        raise RuntimeError("Python executable not found.")
 
     async def _get_tool_path(self, tool: str) -> Optional[Path]:
         """Get path to a tool (poetry, etc.)."""
@@ -343,12 +318,10 @@ class PythonAdapter(LanguageAdapter):
         loop = asyncio.get_event_loop()
         await loop.run_in_executor(None, file_path.write_text, content, "utf-8")
 
-    async def _run_command_async(self, cmd: List[str], **kwargs) -> subprocess.CompletedProcess:
+    async def _run_command_async(
+        self, cmd: List[str], **kwargs
+    ) -> subprocess.CompletedProcess:
         """Run command asynchronously."""
-        # def get_env():
-        #     import os
-        #     return os.environ.copy()
-
         process = await asyncio.create_subprocess_exec(
             *cmd,
             stdout=asyncio.subprocess.PIPE,
@@ -356,53 +329,34 @@ class PythonAdapter(LanguageAdapter):
             cwd=kwargs.get("cwd", self.service_path),
             env={**kwargs.get("env", {})},
         )
+
         stdout, stderr = await process.communicate()
 
         return subprocess.CompletedProcess(
-            args=cmd, returncode=process.returncode or -1, stdout=stdout.decode(), stderr=stderr.decode()
+            args=cmd,
+            returncode=process.returncode or 0,
+            stdout=stdout.decode(),
+            stderr=stderr.decode(),
         )
 
-    async def _install_with_modern_tools(self) -> None:
+    async def _install_with_uv(self) -> None:
         """Install dependencies using modern tools (uv/poetry)."""
         python_path = await self._get_python_executable()
-        if not python_path:
-            raise RuntimeError("No python executable found for service.")
-
-        await self._run_command_async([str(python_path), "-m", "venv", ".venv"])
-        await self._run_command_async([str(python_path), "-m", "pip", "install", "uv"])
-
-        if self._config.use_uv and shutil.which("uv"):
-            await self._run_command_async(
-                [str(python_path), "-m", "uv", "sync"],
-                env={
-                    "UV_PROJECT_ENVIRONMENT": str(python_path).split("/bin")[0],
-                },
-            )
-        elif await self._has_build_system("poetry") and shutil.which("poetry"):
-            await self._run_command_async(["poetry", "install"])
-        else:
-            # Fallback to pip
-            await self._run_command_async([str(python_path), "-m", "pip", "install", "-e", "."])
+        global_uv = str(shutil.which("uv"))
+        process = await self._run_command_async(
+            [global_uv, "sync"],
+            env={
+                "UV_PROJECT_ENVIRONMENT": str(python_path).split("/bin")[0],
+            },
+        )
+        process.check_returncode()
 
     async def _install_with_pip(self) -> None:
         """Install dependencies using pip."""
         python_path = await self._get_python_executable()
-        if not python_path:
-            # Create virtual environment first
-            if shutil.which("uv"):
-                await self._run_command_async(["uv", "venv"])
-                await self._run_command_async(["uv", "pip", "install", "-r", "requirements.txt"])
-            else:
-                await self._run_command_async(["python", "-m", "venv", ".venv"])
-                python_path = await self._get_python_executable()
-                await self._run_command_async([str(python_path), "-m", "pip", "install", "-r", "requirements.txt"])
-        else:
-            await self._run_command_async([str(python_path), "-m", "pip", "install", "-r", "requirements.txt"])
-
-    async def _install_editable(self) -> None:
-        """Install package in editable mode."""
-        python_path = await self._get_python_executable()
-        await self._run_command_async([str(python_path), "-m", "pip", "install", "-e", "."])
+        await self._run_command_async(
+            [str(python_path), "-m", "pip", "install", "-r", "requirements.txt"]
+        )
 
     async def _has_build_system(self, build_system: str) -> bool:
         """Check if pyproject.toml has specific build system."""
@@ -424,14 +378,13 @@ class PythonAdapter(LanguageAdapter):
     async def _check_python_syntax(self, python_files: List[Path]) -> List[str]:
         """Check Python syntax for files."""
         errors = []
-        python_path = await self._get_python_executable()
-
-        if not python_path:
-            return ["Python executable not found for syntax checking"]
+        global_python = str(shutil.which("python3") or shutil.which("python"))
 
         for file_path in python_files:
             try:
-                result = await self._run_command_async([str(python_path), "-m", "py_compile", str(file_path)])
+                result = await self._run_command_async(
+                    [str(global_python), "-m", "py_compile", str(file_path)]
+                )
                 if result.returncode != 0:
                     errors.append(f"Syntax error in {file_path}: {result.stderr.strip()}")
             except Exception as e:
@@ -452,11 +405,21 @@ class PythonAdapter(LanguageAdapter):
 
         return errors
 
-    def _get_port(self) -> int:
+    def _get_port(self) -> Optional[int]:
         """Get service port."""
         if self.service_config.runtime and self.service_config.runtime.port:
             return self.service_config.runtime.port
-        return 8000
+
+        if not self.service_config.framework:
+            return None
+
+        import random
+
+        port = 8000 + random.choice(range(100))
+        logger.warning(
+            f"No port configured for {self.service_config.path}, using random port {port}"
+        )
+        return port
 
     def _get_entry_point(self) -> str:
         """Get service entry point."""

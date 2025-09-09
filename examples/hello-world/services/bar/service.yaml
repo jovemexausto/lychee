@@ -2,12 +2,11 @@ type: python
 path: services/bar
 
 runtime:
-  framework: run_file
   entry_point: main.py
   python_version: "3.12"
 
 schemas:
-  mount_dir: types
+  mount_dir: shared_types
 
 environment:
   MY_LOCAL_ENV: flower

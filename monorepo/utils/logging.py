@@ -97,7 +97,7 @@ class RichLogger:
         title = ("lychee" if "monorepo" in self.name else self.name).center(10)
 
         if len(title) > 15:
-            title = title[:15] + "..."
+            title = title[:15] + " ..."
             title = title.rjust(20)
 
         # Novo formato do prefixo

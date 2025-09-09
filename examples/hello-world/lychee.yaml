@@ -7,6 +7,9 @@ project:
     services_dir: services
 
 schemas:
+  # TODO: pemitir config global e sobrescrita em service.yml
+  # TODO: validar que nomes sejam válidos (sem hifen e outros simbolos)
+  mount_dir: generated_types
   format: "json_schema"
   output_path: .lychee
 
