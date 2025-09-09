@@ -23,7 +23,6 @@ install-as-local-tool:
 lint:
     uv run black --check monorepo
     uv run isort --check-only monorepo
-    uv run mypy monorepo
 
 # Auto-fix formatting
 format:

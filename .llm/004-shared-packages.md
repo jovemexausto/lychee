@@ -122,7 +122,7 @@ You'll need to define how packages are represented in your configuration.
 
 #### `monorepo/config/models.py` (Update)
 
-Add a `PackageConfig` model and include it in your main `MonorepoConfig`.
+Add a `PackageConfig` model and include it in your main `LycheeConfig`.
 
 ```python
 from pydantic import BaseModel, Field
@@ -150,14 +150,14 @@ class PackageConfig(BaseModel):
     test: Optional[PackageTest] = None
     # Add any other package-specific configurations here
 
-class MonorepoConfig(BaseModel):
+class LycheeConfig(BaseModel):
     version: str = "1.0"
     project: ProjectConfig = Field(default_factory=ProjectConfig)
     services: Dict[str, ServiceConfig] = Field(default_factory=dict)
     packages: Dict[str, PackageConfig] = Field(default_factory=dict) # Add this line
     env: Optional[Dict[str, str]] = None
 
-    # ... rest of the MonorepoConfig
+    # ... rest of the LycheeConfig
 ```
 
 #### `assets/templates/lychee.yaml` (Example)
@@ -200,21 +200,21 @@ packages:
       - dist/index.d.ts # Assuming build output
 ```
 
-### 3\. `MonorepoProject` Class Updates
+### 3\. `LycheeProject` Class Updates
 
-Modify `MonorepoProject` to load and manage packages.
+Modify `LycheeProject` to load and manage packages.
 
 #### `monorepo/core/project.py` (Update)
 
 ```python
 # ... existing imports ...
-from monorepo.config.models import MonorepoConfig, ServiceConfig, PackageConfig # Add PackageConfig
+from monorepo.config.models import LycheeConfig, ServiceConfig, PackageConfig # Add PackageConfig
 # ... other imports ...
 
-class MonorepoProject:
+class LycheeProject:
     # ... existing __init__, load, create methods ...
 
-    def __init__(self, path: Path, config: MonorepoConfig):
+    def __init__(self, path: Path, config: LycheeConfig):
         self.path = path.resolve()
         self.config = config
         self._services: Dict[str, Service] = {}
@@ -272,7 +272,7 @@ class MonorepoProject:
         """Get a specific package by name."""
         return self._packages.get(name)
 
-    # ... rest of MonorepoProject class ...
+    # ... rest of LycheeProject class ...
 ```
 
 ### 4\. New `Package` Class
@@ -293,7 +293,7 @@ from monorepo.utils.logging import get_logger
 from monorepo.utils.process import ProcessManager # Assuming you have this for services too
 
 if TYPE_CHECKING:
-    from monorepo.core.project import MonorepoProject
+    from monorepo.core.project import LycheeProject
 
 logger = get_logger(__name__)
 
@@ -305,7 +305,7 @@ class Package:
         name: str,
         path: Path,
         config: PackageConfig,
-        project: "MonorepoProject"
+        project: "LycheeProject"
     ):
         self.name = name
         self.path = path.resolve()
@@ -387,7 +387,7 @@ Modify the `build` command to also build packages.
 
 ```python
 # ... existing imports ...
-from monorepo.core.project import MonorepoProject
+from monorepo.core.project import LycheeProject
 from monorepo.utils.logging import get_logger
 from monorepo.utils.output import console # Assuming console is defined elsewhere
 
@@ -432,7 +432,7 @@ def build_all(
     """Build all services and/or packages in the monorepo."""
     try:
         working_dir = ctx.obj["working_dir"]
-        project = MonorepoProject(working_dir)
+        project = LycheeProject(working_dir)
 
         if services:
             target_services = service_name if service_name else project.services.keys()
@@ -477,7 +477,7 @@ Similarly, update the `test` command.
 
 ```python
 # ... existing imports ...
-from monorepo.core.project import MonorepoProject
+from monorepo.core.project import LycheeProject
 from monorepo.utils.logging import get_logger
 from monorepo.utils.output import console
 
@@ -522,7 +522,7 @@ def test_all(
     """Run tests for all services and/or packages in the monorepo."""
     try:
         working_dir = ctx.obj["working_dir"]
-        project = MonorepoProject(working_dir)
+        project = LycheeProject(working_dir)
 
         if services:
             target_services = service_name if service_name else project.services.keys()
@@ -568,7 +568,7 @@ A command to install dependencies for all services and packages.
 import asyncclick as click
 from rich.console import Console
 
-from monorepo.core.project import MonorepoProject
+from monorepo.core.project import LycheeProject
 from monorepo.utils.logging import get_logger
 
 console = Console()
@@ -596,7 +596,7 @@ def install(
     """Install dependencies for services and packages."""
     try:
         working_dir = ctx.obj["working_dir"]
-        project = MonorepoProject(working_dir)
+        project = LycheeProject(working_dir)
 
         if services:
             console.print("[blue]Installing service dependencies...[/blue]")
