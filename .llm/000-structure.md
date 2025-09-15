@@ -1,122 +1,99 @@
-monorepo-manager/
-├── pyproject.toml # Poetry configuration
+.
+├── examples
+│   └── hello-world
+│   ├── lychee.yaml
+│   ├── package.json
+│   ├── pnpm-lock.yaml
+│   ├── README.md
+│   ├── schemas
+│   │   ├── customer.schema.json
+│   │   └── message.schema.json
+│   └── services
+│   ├── bar
+│   │   ├── main.py
+│   │   ├── pyproject.toml
+│   │   ├── README.md
+│   │   ├── service.yaml
+│   │   └── uv.lock
+│   └── foo
+│   ├── main.py
+│   ├── pyproject.toml
+│   ├── README.md
+│   ├── service.yaml
+│   └── uv.lock
+├── justfile
+├── lychee-cli
+│   ├── pyproject.toml
+│   ├── README.md
+│   └── src
+│   └── lychee
+│   └── cli
+│   ├── commands
+│   │   ├── dev.py
+│   │   ├── init.py
+│   │   ├── install.py
+│   │   ├── new.py
+│   │   └── schema.py
+│   ├── **init**.py
+│   ├── main.py
+│   └── middleware
+│   └── error_handler.py
+├── lychee-core
+│   ├── pyproject.toml
+│   ├── README.md
+│   └── src
+│   └── lychee
+│   └── core
+│   ├── config
+│   │   ├── **init**.py
+│   │   ├── loader.py
+│   │   ├── merger.py
+│   │   └── models.py
+│   ├── **init**.py
+│   ├── languages
+│   │   ├── adapter.py
+│   │   ├── python.py
+│   │   └── registry.py
+│   ├── project.py
+│   ├── schema
+│   │   ├── manager.py
+│   │   ├── validator.py
+│   │   └── watcher.py
+│   ├── server
+│   │   └── development.py
+│   ├── service.py
+│   ├── templates
+│   │   ├── manager.py
+│   │   └── templates
+│   │   └── basic
+│   │   ├── lychee.yaml
+│   │   ├── package.json
+│   │   ├── pnpm-lock.yaml
+│   │   ├── README.md
+│   │   ├── schemas
+│   │   │   ├── customer.schema.json
+│   │   │   └── message.schema.json
+│   │   └── services
+│   │   ├── fastapi
+│   │   │   ├── main.py
+│   │   │   ├── pyproject.toml
+│   │   │   ├── README.md
+│   │   │   ├── service.yaml
+│   │   │   └── uv.lock
+│   │   └── run_file
+│   │   ├── main.py
+│   │   ├── pyproject.toml
+│   │   ├── README.md
+│   │   ├── service.yaml
+│   │   └── uv.lock
+│   └── utils
+│   ├── fs.py
+│   ├── **init**.py
+│   ├── logging.py
+│   └── process.py
+├── pyproject.toml
 ├── README.md
-├── LICENSE
-├── .gitignore
-├── .github/
-│ └── workflows/
-│ ├── ci.yml
-│ ├── release.yml
-│ └── docker.yml
-├── docs/ # Documentation
-│ ├── getting-started.md
-│ ├── configuration.md
-│ └── api/
-├── tests/ # Test suite
-│ ├── **init**.py
-│ ├── conftest.py # Pytest configuration
-│ ├── unit/
-│ ├── integration/
-│ └── fixtures/
-├── scripts/ # Development scripts
-│ ├── install-dev.sh
-│ ├── run-tests.sh
-│ └── build-release.sh
-├── monorepo/ # Main package
-│ ├── **init**.py
-│ ├── **main**.py # Entry point for python -m monorepo
-│ ├── cli/ # CLI interface
-│ │ ├── **init**.py
-│ │ ├── main.py # Main CLI entry point
-│ │ ├── commands/ # Command implementations
-│ │ │ ├── **init**.py
-│ │ │ ├── init.py
-│ │ │ ├── dev.py
-│ │ │ ├── build.py
-│ │ │ ├── test.py
-│ │ │ ├── deploy.py
-│ │ │ ├── schema.py
-│ │ │ └── config.py
-│ │ ├── utils/ # CLI utilities
-│ │ │ ├── **init**.py
-│ │ │ ├── output.py # Rich console output
-│ │ │ ├── progress.py # Progress bars
-│ │ │ └── prompt.py # Interactive prompts
-│ │ └── middleware/ # CLI middleware
-│ │ ├── **init**.py
-│ │ ├── logging.py
-│ │ ├── error_handler.py
-│ │ └── telemetry.py
-│ ├── core/ # Core business logic
-│ │ ├── **init**.py
-│ │ ├── project.py # Project management
-│ │ ├── service.py # Service management
-│ │ ├── workspace.py # Workspace operations
-│ │ └── dependency.py # Dependency resolution
-│ ├── config/ # Configuration management
-│ │ ├── **init**.py
-│ │ ├── loader.py # Configuration loading
-│ │ ├── validator.py # Configuration validation
-│ │ ├── merger.py # Configuration merging
-│ │ ├── schema.py # Configuration schema
-│ │ └── models.py # Pydantic models
-│ ├── schema/ # Schema management
-│ │ ├── **init**.py
-│ │ ├── manager.py # Schema manager
-│ │ ├── generator.py # Type generation
-│ │ ├── validator.py # Schema validation
-│ │ ├── watcher.py # File watching
-│ │ └── generators/ # Language generators
-│ │ ├── **init**.py
-│ │ ├── typescript.py
-│ │ ├── python.py
-│ │ └── base.py
-│ ├── docker/ # Docker integration
-│ │ ├── **init**.py
-│ │ ├── manager.py # Docker manager
-│ │ ├── compose.py # Docker Compose
-│ │ ├── builder.py # Image building
-│ │ ├── dockerfile.py # Dockerfile generation
-│ │ └── registry.py # Registry operations
-│ ├── dev/ # Development workflow
-│ │ ├── **init**.py
-│ │ ├── server.py # Development server
-│ │ ├── proxy.py # Development proxy
-│ │ ├── watcher.py # File watcher
-│ │ ├── dashboard.py # Development dashboard
-│ │ └── health.py # Health checks
-│ ├── languages/ # Language support
-│ │ ├── **init**.py
-│ │ ├── base.py # Base language adapter
-│ │ ├── typescript.py # TypeScript support
-│ │ ├── python.py # Python support
-│ │ └── registry.py # Language registry
-│ ├── plugins/ # Plugin system
-│ │ ├── **init**.py
-│ │ ├── manager.py # Plugin manager
-│ │ ├── loader.py # Plugin loader
-│ │ └── base.py # Base plugin class
-│ ├── utils/ # Shared utilities
-│ │ ├── **init**.py
-│ │ ├── fs.py # File system operations
-│ │ ├── process.py # Process management
-│ │ ├── network.py # Network utilities
-│ │ ├── git.py # Git operations
-│ │ ├── async_utils.py # Async utilities
-│ │ └── logging.py # Logging configuration
-│ └── templates/ # Project templates
-│ ├── **init**.py
-│ ├── manager.py # Template manager
-│ └── templates/ # Template files
-│ ├── python-fastapi/
-│ ├── typescript-express/
-│ └── nextjs-app/
-└── assets/ # Static assets
-├── schemas/ # JSON schemas
-│ ├── monorepo.schema.json
-│ ├── service.schema.json
-│ └── docker.schema.json
-└── templates/ # Configuration templates
-├── lychee.yaml
-├── services.yml
-└── docker.yml
+├── TODO.md
+└── uv.lock
+
+29 directories, 68 files
