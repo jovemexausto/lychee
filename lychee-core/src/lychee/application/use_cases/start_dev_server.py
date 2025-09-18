@@ -37,7 +37,7 @@ class StartDevServerUseCase:
     ) -> None:
         cfg = self._config_repo.load(root)
         registry = EntryPointPluginRegistry.from_config(cfg, include_builtins=True)
-        project = self._project_repo.build(cfg)
+        project = self._project_repo.build(cfg, root)
 
         # Compute start order
         order = project.topo_order()

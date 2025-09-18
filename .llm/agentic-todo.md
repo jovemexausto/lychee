@@ -2,7 +2,7 @@
 
 ## Current Focus
 
-- Milestone 3: Dev server use-cases (continue)
+- None for now — Milestone 3 tasks deferred to 'Deferred/Later'
 
 ## Completed (this batch)
 
@@ -26,10 +26,9 @@
   - `application/use_cases/generate_schemas.py` orchestrates compile + mount via plugins and symlinks
   - CLI `schema generate` wired to use-case
 
-- Dev server use-cases (Milestone 3) — In progress
+- Dev server use-cases (Milestone 3) — Implemented (base)
   - `application/use_cases/{start_dev_server.py, stop_dev_server.py, restart_service.py}` implemented
   - CLI `dev {start, stop, restart, status}` wired to use-cases and in-process orchestrator
-  - TODO: background mode persistence, logs streaming, proxy/dashboard plugins
 
 - Schemas add/update — ✅ Completed
   - Implemented `application/use_cases/{add_schema.py, update_schema.py}`
@@ -63,12 +62,18 @@
 
 ## Next Actions
 
-- Milestone 3: Dev server use-cases (continue)
-  - Add `status` detailed info (running vs stopped, ports) using runtime APIs
-  - Implement `logs` (follow and snapshot) with per-service tails
-  - Add background mode (daemonization) and persistence of handles (PID file/registry)
-  - Introduce Proxy/Dashboard plugin ports and minimal built-ins
-  - Retire `core/server/development.py` after parity
+- TypeScript: implement plugin (schema compiler and, later, runtime if applicable)
+- Clear error when adding unsupported language
+- Symlinks hygiene: on change remove outdated link; auto-clean broken symlinks
+- Gitignore: automatically add service `schemas.mount_dir` to `.gitignore`
+- Hooks system: `on_start`, `on_stop`, `before_this`, `after_that` (as plugins)
+- Everything as plugins: languages, docker, tools, templates
+- Auto-install and load plugins listed in `lychee.yaml`
+- Additional entities modeling: services, packages, tools, resources
+- Init/New UX:
+  - Align `init` to `lychee.yaml` (blank project or current dir)
+  - Prefer `lx new project` (templates) instead of `lx init`
+- Service `path`: make optional or validate real path vs declared
 
 ## Acceptance Targets
 
@@ -76,3 +81,11 @@
   - `lychee schema generate` produces types and mounts symlinks
   - `lychee dev start` boots services in dependency order
   - `lychee dev stop`, `lychee dev restart foo`, `lychee dev status` operate via use-cases
+
+## Deferred / Later (Milestone 3 DX items)
+
+- Add `status` detailed info (running vs stopped, ports) using runtime APIs
+- Implement `logs` (follow and snapshot) with per-service tails
+- Add background mode (daemonization) and persistence of handles (PID file/registry)
+- Introduce Proxy/Dashboard plugin ports and minimal built-ins
+- Retire `core/server/development.py` after parity

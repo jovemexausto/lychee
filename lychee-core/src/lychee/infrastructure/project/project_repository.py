@@ -12,15 +12,16 @@ from lychee.domain.service import Runtime, Service
 class ProjectRepository(ProjectRepositoryPort):
     """Builds a domain Project aggregate from a LycheeConfig DTO."""
 
-    def build(self, config: ConfigDTO) -> Project:
+    def build(self, config: ConfigDTO, root: Path) -> Project:
         # Expecting `config` to be a `LycheeConfig` from core.config.models
-        root = Path(".").resolve()
+        root = root.resolve()
         project = Project(root=root, languages=list(getattr(config.project, "languages", []) or []))
 
         services_cfg: Dict[str, any] = getattr(config, "services", {}) or {}
         for name, svc_cfg in services_cfg.items():
             # `svc_cfg` may be a Pydantic model; use getattr for safety
-            path = Path(getattr(svc_cfg, "path", name)).resolve()
+            rel = getattr(svc_cfg, "path", name)
+            path = (root / rel).resolve()
             language = getattr(svc_cfg, "type", "")
             framework = getattr(svc_cfg, "framework", None)
 

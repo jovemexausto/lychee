@@ -11,7 +11,10 @@ lychee-core = { workspace = true }
 lychee-cli = { workspace = true }
 
 [dependency-groups]
-dev = ["pytest>=8.4.2"]
+dev = [
+    "pytest>=8.4.2",
+    "pytest-asyncio>=0.23",
+]
 
 [tool.uv.workspace]
 members = ["lychee", "lychee-cli", "lychee-core"]

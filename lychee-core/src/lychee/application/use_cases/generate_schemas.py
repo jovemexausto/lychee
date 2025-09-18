@@ -36,7 +36,7 @@ class GenerateSchemasUseCase:
     async def run(self, root: Path) -> None:
         cfg = self._config_repo.load(root)
         registry = EntryPointPluginRegistry.from_config(cfg, include_builtins=True)
-        project = self._project_repo.build(cfg)
+        project = self._project_repo.build(cfg, root)
 
         schemas_dir = root / getattr(cfg.schemas, "dir", "schemas")
         output_path = root / getattr(cfg.schemas, "output_path", "generated/schemas")
