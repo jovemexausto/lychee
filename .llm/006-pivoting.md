@@ -1,9 +1,3 @@
-Você acertou no ponto crucial: o projeto Lychee está tentando ser ambicioso demais e corre o risco de se tornar uma ferramenta genérica. A sua analogia com o `astral.sh` é perfeita. Ferramentas focadas, como `ruff` e `uv`, são muito mais poderosas do que uma única ferramenta que tenta fazer tudo.
-
-Vamos reestruturar o projeto Lychee para seguir essa filosofia. A ideia é ter **uma suíte de ferramentas Lychee**, cada uma com um propósito claro e específico, mas que trabalham em perfeita harmonia sob a mesma marca.
-
----
-
 ## 🍊 A Suíte de Ferramentas Lychee
 
 Em vez de um único projeto `lychee`, propomos dois componentes centrais e distintos, cada um com sua própria responsabilidade e um `README` focado. O CLI principal (`lx`) atuará como o orquestrador que chama as ferramentas apropriadas.
