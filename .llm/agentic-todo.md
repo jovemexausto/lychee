@@ -31,6 +31,11 @@
   - CLI `dev {start, stop, restart, status}` wired to use-cases and in-process orchestrator
   - TODO: background mode persistence, logs streaming, proxy/dashboard plugins
 
+- Schemas add/update — ✅ Completed
+  - Implemented `application/use_cases/{add_schema.py, update_schema.py}`
+  - Wired CLI `schema {add, update}` to use-cases
+  - Removed legacy manager usage from CLI
+
 ## Nice to have
 
 - Plugin config payload propagation
