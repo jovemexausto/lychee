@@ -4,8 +4,12 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from lychee.core.config.models import ServiceConfig
-from lychee.core.languages.registry import language_registry
-from lychee.core.utils import ProcessManager, get_logger
+from lychee.core.utils import get_logger
+from lychee.infrastructure.plugins.entrypoint_registry import EntryPointPluginRegistry
+from lychee.infrastructure.process.asyncio_manager import (
+    AsyncioProcessManagerAdapter,
+)
+from lychee.application.ports.process_manager import ProcessHandle
 
 if TYPE_CHECKING:
     from lychee.core.project import LycheeProject
@@ -23,35 +27,33 @@ class LycheeService:
         self.path = path.resolve()
         self.config = config
         self.project = project
-        self._process_manager = ProcessManager()
-        self._language_adapter = self._create_language_adapter()
-        self._process: Optional[asyncio.subprocess.Process] = None
+        # Ports and registry (honor allowlist from lychee.yaml if present)
+        self._plugin_registry = EntryPointPluginRegistry.from_config(
+            self.project.config, include_builtins=True
+        )
+        self._pm = AsyncioProcessManagerAdapter()
+        self._runtime = self._create_language_runtime()
+        self._process_handle: Optional[ProcessHandle] = None
 
-    def _create_language_adapter(self):
-        """Create language adapter for this service."""
-        adapter_class = language_registry.get_adapter(self.config)
-
-        if not adapter_class:
-            raise RuntimeError(f"No adapter found for language: {self.config.type}")
-
-        return adapter_class
+    def _create_language_runtime(self):
+        """Create language runtime plugin for this service."""
+        runtime = self._plugin_registry.get_language_runtime(self.config.type)
+        if not runtime:
+            raise RuntimeError(f"No runtime plugin found for language: {self.config.type}")
+        return runtime
 
     def get_process(self) -> Optional[asyncio.subprocess.Process]:
-        """Get the subprocess object for the service."""
-        return self._process
+        """Get the subprocess object for the service (native from handle)."""
+        return self._process_handle.native if self._process_handle else None
 
     def get_pid(self) -> Optional[int]:
         """Get the PID of the service process."""
-        return (
-            self._process.pid
-            if self._process and self._process.returncode is None
-            else None
-        )
+        return self._process_handle.pid if self.is_running else None
 
     @property
     def is_running(self) -> bool:
         """Check if the service is currently running."""
-        return self._process_manager.is_process_running(self._process)
+        return self._pm.is_running(self._process_handle)
 
     @property
     def port(self) -> Optional[int]:
@@ -72,9 +74,9 @@ class LycheeService:
 
     async def stop(self) -> None:
         """Stop the service."""
-        if self._process:
-            await self._process_manager.stop_process(self._process)
-            self._process = None
+        if self._process_handle:
+            await self._runtime.stop(self._process_handle)
+            self._process_handle = None
 
     async def restart(self, mode: str = "native") -> None:
         """Restart the service."""
@@ -82,21 +84,16 @@ class LycheeService:
         await self.start(mode)
 
     async def _start_native(self) -> None:
-        """Start the service natively using language adapter."""
-
-        cmd = await self._language_adapter.get_start_command()
+        """Start the service natively using language runtime plugin."""
         env = self._build_environment()
-
-        self._process = await self._process_manager.start_process(
-            cmd=cmd,
-            cwd=str(self.path),
+        handle = await self._runtime.start(
+            service_path=str(self.path),
+            service_config=self.config.model_dump(),
             env=env,
         )
-
-        pid = self._process.pid
-
+        self._process_handle = handle
         logger.debug(
-            f"Service {self.name} started with PID {pid} and command: {' '.join(cmd)}"
+            f"Service {self.name} started with PID {handle.pid} using runtime {self.config.type}"
         )
 
     async def _start_docker(self) -> None:
@@ -107,7 +104,7 @@ class LycheeService:
         """Build the environment variables for the service process."""
         env = os.environ.copy()
         # Set adapter's built-in env variables
-        adapter_env = self._language_adapter.get_environment_variables()
+        adapter_env = self._runtime.environment(str(self.path), self.config.model_dump())
         env.update(adapter_env)
         # Set global lychee.yml variables
         if self.project.config.environment:
@@ -119,44 +116,41 @@ class LycheeService:
 
     async def install_dependencies(self) -> None:
         """Install service dependencies using language adapter."""
-        if self._language_adapter:
-            await self._language_adapter.install_dependencies()
+        if self._runtime:
+            await self._runtime.install(str(self.path), self.config.model_dump())
             logger.info(f"📦 Installed dependencies for {self.name}")
         else:
             logger.warning(
-                f"Cannot install dependencies - no adapter for {self.config.type}"
+                f"Cannot install dependencies - no runtime for {self.config.type}"
             )
 
     async def build(self) -> None:
         """Build the service using language adapter."""
-        if self._language_adapter:
-            cmd = await self._language_adapter.get_build_command()
-            await self._process_manager.run_command(cmd, cwd=str(self.path))
+        if self._runtime:
+            await self._runtime.build(str(self.path), self.config.model_dump())
             logger.info(f"Built service {self.name}")
         else:
-            logger.warning(f"Cannot build - no adapter for {self.config.type}")
+            logger.warning(f"Cannot build - no runtime for {self.config.type}")
 
     async def test(self) -> None:
         """Run tests for the service using language adapter."""
-        if self._language_adapter:
-            cmd = await self._language_adapter.get_test_command()
-            await self._process_manager.run_command(cmd, cwd=str(self.path))
+        if self._runtime:
+            await self._runtime.test(str(self.path), self.config.model_dump())
             logger.info(f"Ran tests for {self.name}")
         else:
-            logger.warning(f"Cannot run tests - no adapter for {self.config.type}")
+            logger.warning(f"Cannot run tests - no runtime for {self.config.type}")
 
     async def validate(self) -> List[str]:
         """Validate service configuration and structure."""
         errors = []
-        if self._language_adapter:
-            adapter_errors = await self._language_adapter.validate_service()
-            errors.extend(adapter_errors)
+        # Validation is delegated to runtime where applicable (optional)
+        # For now, skip runtime-specific validation to keep behavior minimal.
         return errors
 
     async def detect_framework(self) -> Optional[str]:
         """Auto-detect the framework used by this service."""
-        if self._language_adapter:
-            return await self._language_adapter.detect_framework()
+        if self._runtime:
+            return await self._runtime.detect_framework(str(self.path))
         return None
 
     def get_health_status(self) -> Dict[str, Any]:
@@ -168,6 +162,6 @@ class LycheeService:
             "path": str(self.path),
             "type": self.config.type,
             "framework": self.config.framework,
-            "detected_framework": self.detect_framework(),
-            "has_adapter": self._language_adapter is not None,
+            "detected_framework": None,
+            "has_runtime": self._runtime is not None,
         }

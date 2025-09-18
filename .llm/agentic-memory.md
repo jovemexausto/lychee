@@ -34,3 +34,52 @@
 - Ensure planning and task templates reflect the split.
 - Add/update example `service.yml` and schemas in `examples/`.
 - Update onboarding docs to reflect the agentic, modular approach.
+
+## Plugins System (for LLMs)
+
+- Entry-point registry is the discoverability mechanism. Third-party packages expose entry points and are auto-loaded at runtime.
+- Built-ins remain enabled by default so core flows keep working without any external plugins.
+
+__Entry point groups__
+- `lychee.language_runtimes` → implements `LanguageRuntimePort`
+- `lychee.schema_compilers` → implements `SchemaCompilerPort`
+
+__Ports (public surface for plugins)__ in `lychee-core/src/lychee/application/ports/`:
+- `language_runtime.py` → `LanguageRuntimePort`
+- `schema_compiler.py` → `SchemaCompilerPort`
+- `process_manager.py` → `ProcessManagerPort`, `ProcessHandle`
+- `plugin_registry.py` → `PluginRegistryPort`
+
+__Infrastructure adapters (built-ins)__ in `lychee-core/src/lychee/infrastructure/`:
+- `languages/python_runtime_adapter.py` → wraps `lychee.core.languages.python.PythonAdapter` as `LanguageRuntimePort`
+- `schema/quicktype_python_compiler.py` → JSON Schema → Python via `pnpm quicktype`
+- `process/asyncio_manager.py` → wraps `lychee.core.utils.process.ProcessManager` as `ProcessManagerPort`
+
+__Registry implementation__
+- `infrastructure/plugins/entrypoint_registry.py` → `EntryPointPluginRegistry`
+- Accepts instances, classes (no-arg), or factories returning a plugin.
+- Respects an optional allowlist from `LycheeConfig.plugins` using `EntryPointPluginRegistry.from_config(config)`.
+
+__Core wiring__
+- `core/service.py` now uses `EntryPointPluginRegistry.from_config(project.config)` to resolve language runtimes and manage processes via `ProcessHandle`.
+- `core/schema/manager.py` uses the same registry to resolve schema compilers during type generation.
+
+__Config__ (`lychee.yaml`)
+- Optional `plugins` allowlist (by entry point name):
+
+```yaml
+plugins:
+  - name: "my-lychee-plugin"
+    version: ">=0.1,<1.0"  # advisory
+    config:
+      some_option: true
+```
+
+Note: current implementation uses `name` for allowlisting. Version/config are placeholders for future behavior.
+
+__CLI__
+- `lychee plugins list` prints discovered language runtimes and schema compilers using the same registry (honors allowlist).
+
+__Common tasks__
+- To add a new runtime/compiler: implement the appropriate Port, expose via entry points, install the package (e.g., `uv pip install -e .`).
+- To restrict which external plugins load: set `plugins:` in `lychee.yaml` with the desired entry point `name`s.

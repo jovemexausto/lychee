@@ -3,13 +3,13 @@ import json
 from pathlib import Path
 from typing import Dict, List, Optional, Set
 
-from lychee.core.languages.registry import language_registry
 from lychee.core.project import LycheeProject
 from lychee.core.schema.validator import SchemaValidator
 from lychee.core.schema.watcher import SchemaWatcher
 from lychee.core.utils.fs import ensure_symlink, find_broken_symlinks, list_symlinks
 from lychee.core.utils.logging import get_logger
 from lychee.core.utils.process import ProcessManager
+from lychee.infrastructure.plugins.entrypoint_registry import EntryPointPluginRegistry
 
 logger = get_logger(__name__)
 
@@ -22,6 +22,9 @@ class SchemaManager:
         self.validator = SchemaValidator()
         self.process = ProcessManager()
         self.watcher: Optional[SchemaWatcher] = None
+        self._plugins = EntryPointPluginRegistry.from_config(
+            self.project.config, include_builtins=True
+        )
 
     async def initialize(self) -> None:
         """Initialize the schema management system."""
@@ -175,13 +178,19 @@ class SchemaManager:
                     self.project.path / self.project.config.schemas.output_path / language
                 )
                 output_dir.mkdir(parents=True, exist_ok=True)
-                adapter_class = language_registry.get_adapter_class(language)
-                if not adapter_class:
-                    return
-                await adapter_class.generate_types_from_schema(
+                compiler = self._plugins.get_schema_compiler(
+                    self.project.config.schemas.format, language
+                )
+                if not compiler:
+                    logger.warning(
+                        f"No schema compiler available for format={self.project.config.schemas.format} -> language={language}"
+                    )
+                    continue
+                await compiler.compile(
                     schema_path=schema_path,
-                    output_path=output_dir,
+                    output_dir=output_dir,
                     project_path=self.project.path,
+                    options=None,
                 )
 
             logger.info(f"📝 Generated types for schema: [blue]'{schema_name}'[/blue]")

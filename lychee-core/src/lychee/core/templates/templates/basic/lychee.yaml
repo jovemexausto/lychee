@@ -12,3 +12,10 @@ schemas:
 
 environment:
   MY_GLOBAL_ENV: orange
+
+# Optional: plugins allowlist/config (entry point names)
+# plugins:
+#   - name: "my-lychee-plugin"
+#     version: ">=0.1,<1.0"
+#     config:
+#       some_option: true

@@ -62,6 +62,7 @@ from lychee.cli.commands.dev import dev
 from lychee.cli.commands.init import init
 from lychee.cli.commands.install import install
 from lychee.cli.commands.schema import schema
+from lychee.cli.commands.plugins import plugins
 
 cli.add_command(init)
 cli.add_command(install)
@@ -70,6 +71,7 @@ cli.add_command(dev)
 # cli.add_command(test)
 # cli.add_command(deploy)
 cli.add_command(schema)
+cli.add_command(plugins)
 # cli.add_command(config_cmd)
 
 
