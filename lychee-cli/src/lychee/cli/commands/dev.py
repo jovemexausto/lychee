@@ -1,11 +1,14 @@
 """Development server commands."""
 
+from pathlib import Path
 from typing import List, Optional
 
 import asyncclick as click
 
-from lychee.core.project import LycheeProject
-from lychee.core.server.development import DevelopmentServer
+from lychee.application.use_cases.start_dev_server import StartDevServerUseCase
+from lychee.application.use_cases.stop_dev_server import StopDevServerUseCase
+from lychee.application.use_cases.restart_service import RestartServiceUseCase
+from lychee.application.services.runtime_orchestrator import runtime_orchestrator
 from lychee.core.utils import get_logger
 
 logger = get_logger(__name__)
@@ -44,29 +47,27 @@ async def start(
 ):
     """Start development servers for services."""
     try:
-        # Load project
-        working_dir = ctx.obj["working_dir"]
-        project = LycheeProject(working_dir)
-        await project.validate()
+        working_dir: Path = ctx.obj["working_dir"]
 
         # Parse services
         service_list: List[str] = []
         if services:
             service_list = [s.strip() for s in services.split(",")]
 
-        # Create development server
-        dev_server = DevelopmentServer(
-            project=project,
+        # New application use-case for starting services
+        usecase = StartDevServerUseCase()
+        await usecase.run(
+            root=working_dir,
+            services=service_list or None,
             mode=mode,
-            proxy_port=port,
-            enable_proxy=not no_proxy,
-            enable_dashboard=not no_dashboard,
+            enable_proxy=(not no_proxy),
+            enable_dashboard=(not no_dashboard),
         )
 
-        if background:
-            dev_server.start_background(service_list)
-        else:
-            await dev_server.start(service_list)
+        # If not background, block to keep process alive (CTRL+C to stop)
+        if not background:
+            await click.sleep(10**12)  # effectively wait forever until signal
+
     except Exception as e:
         logger.error(f"Failed to start development server: {e}")
         await ctx.aexit(1)
@@ -77,12 +78,9 @@ async def start(
 async def stop(ctx: click.Context):
     """Stop all development servers."""
     try:
-        working_dir = ctx.obj["working_dir"]
-        project = LycheeProject(working_dir)
-
-        dev_server = DevelopmentServer(project)
-        dev_server.stop_all()
-
+        working_dir: Path = ctx.obj["working_dir"]
+        usecase = StopDevServerUseCase()
+        await usecase.run(working_dir)
         logger.info("✅ Development servers stopped")
 
     except Exception as e:
@@ -96,12 +94,9 @@ async def stop(ctx: click.Context):
 async def restart(ctx: click.Context, service_name: str):
     """Restart a specific service."""
     try:
-        working_dir = ctx.obj["working_dir"]
-        project = LycheeProject(working_dir)
-
-        dev_server = DevelopmentServer(project)
-        dev_server.restart_service(service_name)
-
+        working_dir: Path = ctx.obj["working_dir"]
+        usecase = RestartServiceUseCase()
+        await usecase.run(working_dir, service_name)
         logger.info(f"✅ Service '{service_name}' restarted")
 
     except Exception as e:
@@ -114,20 +109,14 @@ async def restart(ctx: click.Context, service_name: str):
 async def status(ctx: click.Context):
     """Show status of all services."""
     try:
-        working_dir = ctx.obj["working_dir"]
-        project = LycheeProject(working_dir)
-
-        dev_server = DevelopmentServer(project)
-        status_info = dev_server.get_status()
-
-        # Display status in a nice format
-        logger.info("[bold]Service Status:[/bold]")
-        for service, info in status_info.items():
-            status_color = "green" if info["status"] == "running" else "red"
-            logger.print(
-                f"  {service}: [{status_color}]{info['status']}[/{status_color}] "
-                f"(PID: {info.get('pid', 'N/A')})"
-            )
+        # NOTE: In-process orchestrator only; background mode is not yet persisted across processes.
+        info = runtime_orchestrator.status()
+        if not info:
+            logger.info("No services running in this process context.")
+            return
+        logger.info("[bold]Service Status (in-process):[/bold]")
+        for service, data in info.items():
+            logger.info(f"  {service}: running (PID: {data.get('pid','N/A')})")
 
     except Exception as e:
         logger.error(f"❌ Failed to get status: {e}")

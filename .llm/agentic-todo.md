@@ -2,7 +2,7 @@
 
 ## Current Focus
 
-- None (batch completed). Open to next priorities.
+- Milestone 3: Dev server use-cases (continue)
 
 ## Completed (this batch)
 
@@ -18,6 +18,18 @@
   - `examples/hello-world/lychee.yaml`: commented `plugins` example
   - `.llm/agentic-memory.md`: updated with plugin architecture guidance for LLMs
   - `.llm/007-plugins-architecture-and-registry.md`: architecture note
+- Domain and repositories (Milestone 1)
+  - `lychee-core/src/lychee/domain/{project.py, service.py, errors.py}`: Project/Service entities and topo sort
+  - Ports: `application/ports/{config_repository.py, project_repository.py, symlink_manager.py}`
+  - Infra: `infrastructure/config/yaml_config_repository.py`, `infrastructure/project/project_repository.py`, `infrastructure/fs/symlink_manager.py`
+- Use-case: Schemas (Milestone 2) ✅
+  - `application/use_cases/generate_schemas.py` orchestrates compile + mount via plugins and symlinks
+  - CLI `schema generate` wired to use-case
+
+- Dev server use-cases (Milestone 3) — In progress
+  - `application/use_cases/{start_dev_server.py, stop_dev_server.py, restart_service.py}` implemented
+  - CLI `dev {start, stop, restart, status}` wired to use-cases and in-process orchestrator
+  - TODO: background mode persistence, logs streaming, proxy/dashboard plugins
 
 ## Nice to have
 
@@ -43,3 +55,19 @@
 - Documentation
   - Expand `lychee-core/PLUGINS.md` with troubleshooting examples and real plugin templates.
   - Add a minimal sample external package under `examples/` to demonstrate local dev.
+
+## Next Actions
+
+- Milestone 3: Dev server use-cases (continue)
+  - Add `status` detailed info (running vs stopped, ports) using runtime APIs
+  - Implement `logs` (follow and snapshot) with per-service tails
+  - Add background mode (daemonization) and persistence of handles (PID file/registry)
+  - Introduce Proxy/Dashboard plugin ports and minimal built-ins
+  - Retire `core/server/development.py` after parity
+
+## Acceptance Targets
+
+- `examples/hello-world` still works end-to-end:
+  - `lychee schema generate` produces types and mounts symlinks
+  - `lychee dev start` boots services in dependency order
+  - `lychee dev stop`, `lychee dev restart foo`, `lychee dev status` operate via use-cases

@@ -2,8 +2,8 @@ import json
 
 import asyncclick as click
 
-from lychee.core.project import LycheeProject
-from lychee.core.schema.manager import SchemaManager
+from pathlib import Path
+from lychee.application.use_cases.generate_schemas import GenerateSchemasUseCase
 from lychee.core.utils import get_logger
 
 logger = get_logger(__name__)
@@ -21,6 +21,10 @@ def schema():
 async def add(ctx: click.Context, name, schema_file):
     """Add a new schema and generate Python types."""
     working_dir = ctx.obj["working_dir"]
+    # TODO: Implement add/update via new use-cases (persist schema and regenerate)
+    from lychee.core.project import LycheeProject  # local import to reduce coupling
+    from lychee.core.schema.manager import SchemaManager
+
     project = LycheeProject(working_dir)
     manager = SchemaManager(project)
     with open(schema_file, "r") as f:
@@ -36,6 +40,11 @@ async def add(ctx: click.Context, name, schema_file):
 async def update(ctx, name, schema_file):
     """Update an existing schema and regenerate Python types."""
     working_dir = ctx.obj["working_dir"]
+    # TODO: Implement add/update via new use-cases (persist schema and regenerate)
+    # For now, fallback to old manager if needed in future.
+    from lychee.core.project import LycheeProject  # local import to reduce coupling
+    from lychee.core.schema.manager import SchemaManager
+
     project = LycheeProject(working_dir)
     manager = SchemaManager(project)
     with open(schema_file, "r") as f:
@@ -48,11 +57,10 @@ async def update(ctx, name, schema_file):
 @click.pass_context
 async def generate(ctx):
     """Regenerate Python types for all schemas."""
-    working_dir = ctx.obj["working_dir"]
-    project = LycheeProject(working_dir)
-    manager = SchemaManager(project)
-    await manager.initialize()
-    logger.info("[green]Generated Python types for all schemas.[/green]")
+    working_dir: Path = ctx.obj["working_dir"]
+    usecase = GenerateSchemasUseCase()
+    await usecase.run(working_dir)
+    logger.info("[green]Generated types and mounted schemas for all services.[/green]")
 
 
 @schema.command()
