@@ -17,7 +17,7 @@ dev = [
 ]
 
 [tool.uv.workspace]
-members = ["lychee", "lychee-cli", "lychee-core"]
+members = ["lychee", "lychee-cli", "lychee-core", "lychee-python"]
 
 [build-system]
 requires = ["hatchling"]
