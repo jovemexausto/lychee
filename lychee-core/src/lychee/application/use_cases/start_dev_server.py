@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import os
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from lychee.application.services.runtime_orchestrator import runtime_orchestrator
 from lychee.application.ports.config_repository import ConfigRepositoryPort
@@ -47,7 +47,7 @@ class StartDevServerUseCase:
             order = [s for s in order if s in want]
 
         # Map service name -> runtime
-        runtime_by_service: Dict[str, any] = {}
+        runtime_by_service: Dict[str, Any] = {}
         for name in order:
             svc = project.get_service(name)
             runtime = registry.get_language_runtime(svc.language)
@@ -64,6 +64,17 @@ class StartDevServerUseCase:
                 continue
             env = self._build_env(cfg, svc)
             try:
+                # Ensure environment & dependencies are ready
+                await runtime.install(str(svc.path), {
+                    "type": svc.language,
+                    "path": str(svc.path),
+                    "framework": svc.framework,
+                    "runtime": {
+                        "port": svc.runtime.port,
+                        "entry_point": svc.runtime.entry_point,
+                        **svc.runtime.version_info,
+                    },
+                })
                 await runtime_orchestrator.start_service(svc, runtime, env)
                 logger.info(f"Started service '{name}'")
             except Exception as e:

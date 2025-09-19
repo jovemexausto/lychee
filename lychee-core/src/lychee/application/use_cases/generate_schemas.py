@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import asyncio
-import json
 from pathlib import Path
 from typing import Optional
 
@@ -38,9 +36,10 @@ class GenerateSchemasUseCase:
         registry = EntryPointPluginRegistry.from_config(cfg, include_builtins=True)
         project = self._project_repo.build(cfg, root)
 
-        schemas_dir = root / getattr(cfg.schemas, "dir", "schemas")
-        output_path = root / getattr(cfg.schemas, "output_path", "generated/schemas")
-        schema_format = getattr(cfg.schemas, "format", "json_schema")
+        schemas_cfg = getattr(cfg, "schemas", None)
+        schemas_dir = root / getattr(schemas_cfg, "dir", "schemas")
+        output_path = root / getattr(schemas_cfg, "output_path", "generated/schemas")
+        schema_format = getattr(schemas_cfg, "format", "json_schema")
 
         # Compile for each schema file
         for schema_file in sorted(schemas_dir.glob("*.schema.json")):

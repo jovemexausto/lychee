@@ -113,9 +113,15 @@ class PythonAdapter(LanguageAdapter):
         await self._write_file_async(python_version_file, python_version)
 
         # Ensure the service has its own virtual environment with the right python version
-        global_python = str(shutil.which("python3") or shutil.which("python"))
-        await self._run_command_async([global_python, "-m", "pip", "install", "uv"])
-        await self._run_command_async([global_python, "-m", "uv", "venv"])
+        # Use Astral `uv` CLI when available
+        global_uv = shutil.which("uv")
+        if global_uv:
+            # Create or reuse local venv at .venv
+            await self._run_command_async([str(global_uv), "venv"], cwd=str(self.service_path))
+        else:
+            # Fallback: create venv with stdlib (no dependency isolation guarantees)
+            global_python = str(shutil.which("python3") or shutil.which("python"))
+            await self._run_command_async([global_python, "-m", "venv", ".venv"], cwd=str(self.service_path))
 
         if await self._file_exists("pyproject.toml"):
             await self._install_with_uv()

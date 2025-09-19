@@ -27,7 +27,7 @@ class RestartServiceUseCase:
     async def run(self, root: Path, service_name: str) -> None:
         cfg = self._config_repo.load(root)
         registry = EntryPointPluginRegistry.from_config(cfg, include_builtins=True)
-        project = self._project_repo.build(cfg)
+        project = self._project_repo.build(cfg, root)
         svc = project.get_service(service_name)
         runtime = registry.get_language_runtime(svc.language)
         if not runtime:

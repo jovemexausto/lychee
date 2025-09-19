@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 from lychee.application.services.runtime_orchestrator import runtime_orchestrator
 from lychee.application.ports.config_repository import ConfigRepositoryPort
@@ -26,8 +26,8 @@ class StopDevServerUseCase:
     async def run(self, root: Path) -> None:
         cfg = self._config_repo.load(root)
         registry = EntryPointPluginRegistry.from_config(cfg, include_builtins=True)
-        project = self._project_repo.build(cfg)
-        runtime_by_service: Dict[str, any] = {}
+        project = self._project_repo.build(cfg, root)
+        runtime_by_service: Dict[str, Any] = {}
         for name, svc in project.services.items():
             rt = registry.get_language_runtime(svc.language)
             if rt:

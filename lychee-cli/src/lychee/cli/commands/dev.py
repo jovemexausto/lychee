@@ -1,5 +1,6 @@
 """Development server commands."""
 
+import asyncio
 from pathlib import Path
 from typing import List, Optional
 
@@ -9,6 +10,8 @@ from lychee.application.use_cases.start_dev_server import StartDevServerUseCase
 from lychee.application.use_cases.stop_dev_server import StopDevServerUseCase
 from lychee.application.use_cases.restart_service import RestartServiceUseCase
 from lychee.application.services.runtime_orchestrator import runtime_orchestrator
+from lychee.core.project import LycheeProject
+from lychee.core.server.development import DevelopmentServer
 from lychee.core.utils import get_logger
 
 logger = get_logger(__name__)
@@ -64,9 +67,9 @@ async def start(
             enable_dashboard=(not no_dashboard),
         )
 
-        # If not background, block to keep process alive (CTRL+C to stop)
+        # Keep parent alive to avoid terminating child processes early.
         if not background:
-            await click.sleep(10**12)  # effectively wait forever until signal
+            await asyncio.sleep(10**12)
 
     except Exception as e:
         logger.error(f"Failed to start development server: {e}")
